@@ -83,7 +83,7 @@ export class CameraEntity {
         shadingMaterial.addUniformVector(
           'viewMatrix',
           'Matrix4fv',
-          this.__entity.transform.matrix.inverse.elements!
+          this.__entity.transform.matrix.inverse!.elements
         );
 
         shadingMaterial.addUniform(

@@ -1,0 +1,106 @@
+
+// == loop here ====================================================================================
+function update(): void {
+  const checkboxActive = $<HTMLInputElement>( '#active' );
+
+  if ( checkboxActive && !checkboxActive.checked ) {
+    setTimeout( update, 100 );
+    return;
+  }
+
+  requestAnimationFrame( update );
+
+  // -- update some bunch of shit ------------------------------------------------------------------
+  clock.update();
+  screenCaptureTexture.update();
+  randomTexture.update();
+
+  // -- let's render this --------------------------------------------------------------------------
+  glCat.useProgram( programRender );
+  gl.bindFramebuffer( gl.FRAMEBUFFER, fbFeedbackSwap.i.raw );
+
+  programRender.attribute( 'p', vboQuad, 2 );
+  programRender.uniform4f( 'pos', -1.0, -1.0, 1.0, 1.0 );
+
+  programRender.uniform1f( 'time', clock.time );
+  programRender.uniform1f( 'frame', totalFrame );
+  programRender.uniform2f( 'resolution', width, height );
+
+  programRender.uniformTexture( 'samplerScreen', screenCaptureTexture.texture.raw, 0 );
+  programRender.uniformTexture( 'samplerRandomStatic', randomTextureStatic.texture.raw, 1 );
+  programRender.uniformTexture( 'samplerRandom', randomTexture.texture.raw, 2 );
+  programRender.uniformTexture( 'samplerFeedback', fbFeedbackSwap.o.texture!.raw, 3 );
+
+  gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+  fbFeedbackSwap.swap();
+
+  // == bloom ======================================================================================
+  glCat.useProgram( programBloomPre );
+  gl.bindFramebuffer( gl.FRAMEBUFFER, fbPostSwap.i.raw );
+
+  programBloomPre.attribute( 'p', vboQuad, 2 );
+  programBloomPre.uniform4f( 'pos', -1.0, -1.0, 0.0, 0.0 );
+
+  programBloomPre.uniformTexture( 'sampler0', fbFeedbackSwap.o.texture!.raw, 0 );
+
+  gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+  fbPostSwap.swap();
+
+  for ( let i = 0; i < 5; i ++ ) {
+    glCat.useProgram( programReturn );
+    gl.bindFramebuffer( gl.FRAMEBUFFER, fbPostSwap.i.raw );
+
+    programReturn.attribute( 'p', vboQuad, 2 );
+
+    programReturn.uniformTexture( 'sampler0', fbPostSwap.o.texture!.raw, 0 );
+
+    programReturn.uniform4f( 'pos', -1.0, -1.0, 1.0, 1.0 );
+    gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+    programReturn.uniform4f( 'pos', 0.0, 0.0, 1.0, 1.0 );
+    gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+    fbPostSwap.swap();
+  }
+
+  for ( let i = 0; i < 2; i ++ ) {
+    glCat.useProgram( programBloomBlur );
+    gl.bindFramebuffer( gl.FRAMEBUFFER, fbPostSwap.i.raw );
+
+    programBloomBlur.attribute( 'p', vboQuad, 2 );
+    programBloomBlur.uniform1i( 'isVert', i );
+    programBloomBlur.uniform4f( 'pos', -1.0, -1.0, 1.0, 1.0 );
+    programBloomBlur.uniform2f( 'resolution', width, height );
+
+    programBloomBlur.uniformTexture( 'sampler0', fbPostSwap.o.texture!.raw, 0 );
+
+    gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+    fbPostSwap.swap();
+  }
+
+  // -- return -------------------------------------------------------------------------------------
+  glCat.useProgram( programBloomPost );
+  gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+  programBloomPost.attribute( 'p', vboQuad, 2 );
+  programBloomPost.uniform4f( 'pos', -1.0, -1.0, 1.0, 1.0 );
+
+  programBloomPost.uniformTexture( 'samplerDry', fbFeedbackSwap.o.texture!.raw, 0 );
+  programBloomPost.uniformTexture( 'samplerWet', fbPostSwap.o.texture!.raw, 1 );
+
+  gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+
+  // -- return -------------------------------------------------------------------------------------
+  // glCat.useProgram( programReturn );
+  // gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+  // programReturn.attribute( 'p', vboQuad, 2 );
+  // programReturn.uniform4f( 'pos', -1.0, -1.0, 1.0, 1.0 );
+
+  // programReturn.uniformTexture( 'sampler0', fbPostSwap.o.texture!.raw, 0 );
+
+  // gl.drawArrays( gl.TRIANGLE_STRIP, 0, 4 );
+
+  // -- frame --------------------------------------------------------------------------------------
+  totalFrame ++;
+}
+
+update();

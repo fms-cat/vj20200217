@@ -1,0 +1,36 @@
+{
+  "name": "vj20200217",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "webpack-dev-server --hot --mode development",
+    "build-dev": "webpack --mode development",
+    "build-prod": "webpack --mode production",
+    "build": "yarn build-dev && yarn build-prod"
+  },
+  "devDependencies": {
+    "@fms-cat/experimental": "^0.1.3",
+    "@fms-cat/glcat-ts": "^0.7.3",
+    "@types/webmidi": "^2.0.4",
+    "@types/webpack-env": "^1.15.1",
+    "@typescript-eslint/eslint-plugin": "^2.19.0",
+    "@typescript-eslint/parser": "^2.19.0",
+    "css-loader": "^3.4.2",
+    "eslint": "^6.8.0",
+    "fibers": "^4.0.2",
+    "fork-ts-checker-webpack-plugin": "^4.0.3",
+    "glslify-loader": "^2.0.0",
+    "html-webpack-plugin": "^3.2.0",
+    "raw-loader": "^4.0.0",
+    "sass": "^1.25.0",
+    "sass-loader": "^8.0.2",
+    "style-loader": "^1.1.3",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.5",
+    "url-loader": "^3.0.0",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.2"
+  }
+}

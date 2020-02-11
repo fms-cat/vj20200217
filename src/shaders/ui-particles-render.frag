@@ -15,24 +15,28 @@ varying vec4 vPosition;
 varying vec3 vNormal;
 varying vec4 vColor;
 varying float vLife;
-varying vec4 vRandom;
+varying vec2 vUv;
 
-uniform float time;
+uniform sampler2D samplerDoublequoteRandom;
 
 // == common =======================================================================================
 mat2 rotate2D( float _t ) {
   return mat2( cos( _t ), sin( _t ), -sin( _t ), cos( _t ) );
 }
 
+vec2 uvInvY( vec2 uv ) {
+  return vec2( 0.0, 1.0 ) + vec2( 1.0, -1.0 ) * uv;
+}
+
 // == main procedure ===============================================================================
 void main() {
   if ( vColor.a < 0.0 ) { discard; }
 
-  float emissive = 41.0;
-  // emissive *= 0.5 + 0.5 * sin( TAU * vRandom.z + 20.0 * time );
+  vec4 tex = texture2D( samplerDoublequoteRandom, uvInvY( vUv ) );
+  if ( tex.w < 0.5 ) { discard; }
 
   gl_FragData[ 0 ] = vPosition;
   gl_FragData[ 1 ] = vec4( vNormal, 1.0 );
-  gl_FragData[ 2 ] = 0.1 * vColor;
-  gl_FragData[ 3 ] = vec4( vec3( 0.9, 0.9, emissive ), MTL_PBR );
+  gl_FragData[ 2 ] = 0.1 * tex;
+  gl_FragData[ 3 ] = vec4( vec3( 0.9, 0.1, 10.0 ), MTL_PBR );
 }

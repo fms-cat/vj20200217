@@ -17,6 +17,7 @@ varying vec2 vUv;
 
 uniform vec3 cameraPos;
 uniform vec3 lightPos;
+uniform vec3 lightColor;
 uniform mat4 lightPV;
 uniform vec2 lightNearFar;
 uniform mat4 viewMatrix;
@@ -60,13 +61,6 @@ AngularInfo genAngularInfo( Isect isect ) {
   return aI;
 }
 
-float calcDepth( float z ) {
-  float d = ( lightNearFar.y - lightNearFar.x );
-  float a = -( lightNearFar.y + lightNearFar.x ) / d;
-  float b = -2.0 * lightNearFar.y * lightNearFar.x / d;
-  return -( a - b / z );
-}
-
 float getShadow( Isect isect, AngularInfo aI ) {
   float depth = linearstep( lightNearFar.x, lightNearFar.y, length( isect.position - lightPos ) );
   float bias = 0.01 + 0.01 * ( 1.0 - aI.dotNL );
@@ -81,9 +75,9 @@ float getShadow( Isect isect, AngularInfo aI ) {
 
   float variance = saturate( tex.y - tex.x * tex.x );
   float md = depth - tex.x;
-  float p = variance / ( variance + md * md );
+  float p = linearstep( 0.2, 1.0, variance / ( variance + md * md ) );
 
-  return depth <= tex.x ? 1.0 : p;
+  return md < 0.0 ? 1.0 : p;
 }
 
 void main() {
@@ -93,10 +87,10 @@ void main() {
   vec4 tex3 = texture2D( sampler3, vUv );
 
   Isect isect;
-  isect.albedo = tex0.rgb;
-  isect.position = tex1.xyz;
-  isect.depth = tex1.w;
-  isect.normal = tex2.xyz;
+  isect.position = tex0.xyz;
+  isect.depth = tex0.w;
+  isect.normal = tex1.xyz;
+  isect.albedo = tex2.rgb;
   isect.materialId = tex3.w - 0.5;
 
   if ( isect.materialId < MTL_NONE ) {
@@ -117,6 +111,10 @@ void main() {
     AngularInfo aI = genAngularInfo( isect );
 
     float shadow = getShadow( isect, aI );
+    shadow = mix( 1.0, shadow, 0.8 );
+
+    float lenL = length( isect.position - lightPos );
+    float decay = 1.0 / ( lenL * lenL );
 
     vec3 F0 = mix( DIELECTRIC_SPECULAR, isect.albedo, metallic );
     vec3 F = F0 + ( 1.0 - F0 ) * pow( 1.0 - aI.dotVH, 5.0 );
@@ -132,7 +130,9 @@ void main() {
 
     vec3 diffuse = max( vec3( 0.0 ), ( 1.0 - F ) * ( isect.albedo / PI ) );
     vec3 spec = max( vec3( 0.0 ), F * Vis * D );
-    vec3 shade = shadow * aI.dotNL * ( diffuse + spec );
+    vec3 shade = PI * lightColor * decay * shadow * aI.dotNL * ( diffuse + spec );
+
+    vec3 color = shade;
 
 #ifdef IS_FIRST_LIGHT
     vec3 refl = reflect( aI.V, isect.normal );
@@ -143,12 +143,12 @@ void main() {
     vec2 brdf = texture2D( samplerBRDFLUT, vec2( aI.dotNV, 1.0 - roughness ) ).xy;
 
     vec3 texEnv = 0.2 * pow( texture2D( samplerEnv, envCoord ).rgb, vec3( 2.2 ) );
-    shade += texEnv * ( brdf.x * F0 + brdf.y );
+    color += PI * texEnv * ( brdf.x * F0 + brdf.y );
+
+    color += emissive * aI.dotNV * isect.albedo;
 #endif // IS_FIRST_LIGHT
 
-    shade += emissive * aI.dotNV * isect.albedo;
-
-    gl_FragColor = vec4( PI * shade, 1.0 );
+    gl_FragColor = vec4( color, 1.0 );
 
     return;
 

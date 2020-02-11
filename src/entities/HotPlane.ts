@@ -72,7 +72,6 @@ export class HotPlane {
       Shaders.objectVert,
       require( '../shaders/fuck.frag' ).default
     );
-    material.blend = [ GL.ONE, GL.ZERO ];
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/fuck.frag', () => {

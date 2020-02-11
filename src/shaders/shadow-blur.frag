@@ -22,11 +22,13 @@ void main() {
   vec2 bv = texel * ( isVert ? vec2( 0.0, 1.0 ) : vec2( 1.0, 0.0 ) );
   vec4 sum = vec4( 0.0 );
 
-  sum += 0.29411764705882354 * texture2D( sampler0, vUv );
+  vec4 tex = texture2D( sampler0, vUv );
+
+  sum += 0.29411764705882354 * tex;
   vec2 suv = vUv - bv * 1.3333333333333333;
   sum += 0.35294117647058826 * texture2D( sampler0, suv );
   suv = vUv + bv * 1.3333333333333333;
   sum += 0.35294117647058826 * texture2D( sampler0, suv );
 
-  gl_FragColor = vec4( sum.xyz, 1.0 );
+  gl_FragColor = vec4( sum.xy, tex.x, 1.0 );
 }

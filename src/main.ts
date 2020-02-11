@@ -14,6 +14,7 @@ import { Lambda } from './heck/components/Lambda';
 import { LightEntity } from './entities/LightEntity';
 import RandomTexture from './utils/RandomTexture';
 import { Trails } from './entities/Trails';
+import { UIParticles } from './entities/UIParticles';
 
 // == we are still struggling by this ==============================================================
 function $<T extends Element>( selector: string ): T | null {
@@ -51,19 +52,19 @@ entityRandomTextureUpdater.components.push( new Lambda( () => {
 dog.root.children.push( entityRandomTextureUpdater );
 
 const trails = new Trails( {
-  target: canvasRenderTarget,
-  trails: 4096,
-  trailLength: 64,
+  trails: 1024,
+  trailLength: 16,
   textureRandom: randomTexture.texture,
   textureRandomStatic: randomTextureStatic.texture
 } );
-// trails.entity.components.push( new Lambda( ( event ) => {
-//   trails.entity.transform.rotation = Quaternion.fromAxisAngle(
-//     new Vector3( [ 1.0, 0.2, 0.0 ] ).normalized,
-//     0.1 * event.time
-//   );
-// } ) );
 dog.root.children.push( trails.entity );
+
+const uiParticles = new UIParticles( {
+  particlesSqrt: 32,
+  textureRandom: randomTexture.texture,
+  textureRandomStatic: randomTextureStatic.texture
+} );
+dog.root.children.push( uiParticles.entity );
 
 const hotPlane = new HotPlane();
 hotPlane.material.addUniformTexture( 'samplerRandom', randomTexture.texture );
@@ -76,15 +77,32 @@ const cameraTarget = new BufferRenderTarget( {
 } );
 
 const light = new LightEntity( {
-  root: dog.root
+  root: dog.root,
+  shadowMapFov: 40.0,
+  shadowMapNear: 1.0,
+  shadowMapFar: 40.0
 } );
-light.entity.transform.lookAt( new Vector3( [ 5.0, 5.0, 5.0 ] ) );
+light.color = [ 40.0, 8.0, 0.0 ];
+light.entity.transform.lookAt( new Vector3( [ 2.0, 4.0, 5.0 ] ) );
 dog.root.children.push( light.entity );
+
+const light2 = new LightEntity( {
+  root: dog.root,
+  shadowMapFov: 40.0,
+  shadowMapNear: 1.0,
+  shadowMapFar: 40.0
+} );
+light2.color = [ 0.0, 24.0, 48.0 ];
+light2.entity.transform.lookAt( new Vector3( [ -4.0, -2.0, 5.0 ] ) );
+dog.root.children.push( light2.entity );
 
 const camera = new CameraEntity( {
   root: dog.root,
   target: cameraTarget,
-  lights: [ light ]
+  lights: [
+    light,
+    light2
+  ]
 } );
 camera.entity.transform.lookAt( new Vector3( [ 0.0, 0.0, 5.0 ] ) );
 camera.camera.clear = [ 0.0, 0.0, 0.0, 0.0 ];

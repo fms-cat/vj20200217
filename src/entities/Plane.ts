@@ -78,7 +78,6 @@ export class Plane {
 
   protected __createMaterial(): Material {
     const material = new Material( Shaders.objectVert, Shaders.normalFrag );
-    material.blend = [ GL.ONE, GL.ZERO ];
 
     return material;
   }

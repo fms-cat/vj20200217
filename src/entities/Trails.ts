@@ -5,11 +5,9 @@ import { GPUParticles } from './GPUParticles';
 import { Geometry } from '../heck/Geometry';
 import { InstancedGeometry } from '../heck/InstancedGeometry';
 import { Material } from '../heck/Material';
-import { RenderTarget } from '../heck/RenderTarget';
 import { Shaders } from '../shaders';
 
 export interface TrailsOptions {
-  target: RenderTarget;
   trails: number;
   trailLength: number;
   textureRandom: GLCatTexture;
@@ -35,7 +33,6 @@ export class Trails {
 
   public constructor( options: TrailsOptions ) {
     this.__gpuParticles = new GPUParticles( {
-      target: options.target,
       materialCompute: this.__createMaterialCompute( options ),
       geometryRender: this.__createGeometryRender( options ),
       materialRender: this.__createMaterialRender( options ),
@@ -50,7 +47,6 @@ export class Trails {
       Shaders.quadVert,
       require( '../shaders/trails-compute.frag' ).default
     );
-    material.blend = [ GL.ONE, GL.ZERO ];
     material.addUniform( 'trails', '1f', options.trails );
     material.addUniform( 'trailLength', '1f', options.trailLength );
     material.addUniform( 'ppp', '1f', Trails.__ppp );
@@ -165,7 +161,6 @@ export class Trails {
         'USE_VERTEX_COLOR': 'true'
       }
     );
-    material.blend = [ GL.ONE, GL.ZERO ];
     material.addUniform( 'colorVar', '1f', 0.1 );
     material.addUniform( 'ppp', '1f', Trails.__ppp );
     material.addUniformTexture( 'samplerRandomStatic', options.textureRandomStatic );

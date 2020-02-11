@@ -8,15 +8,15 @@
 
 // -------------------------------------------------------------------------------------------------
 
-attribute float computeU;
-attribute float computeV;
-attribute float triIndex;
+attribute vec2 computeUV;
+attribute vec2 p;
 
 varying vec4 vPosition;
 varying vec3 vNormal;
 varying vec4 vColor;
+varying vec2 vUv;
 varying float vLife;
-varying vec4 vRandom;
+varying float vIsOkayToDraw;
 
 uniform vec2 resolution;
 uniform vec2 resolutionCompute;
@@ -56,37 +56,31 @@ mat2 rotate2D( float _t ) {
 // -------------------------------------------------------------------------------------------------
 
 void main() {
-  vec2 puv = vec2( computeU, computeV );
+  vec2 puv = vec2( computeUV );
   vec2 dppix = vec2( 1.0 ) / resolutionCompute;
 
   // == fetch texture ==============================================================================
   vec4 pos = texture2D( samplerCompute, puv );
   vec4 vel = texture2D( samplerCompute, puv + dppix * vec2( 1.0, 0.0 ) );
-  vec4 velp = texture2D( samplerCompute, puv + dppix * vec2( -ppp + 1.0, 0.0 ) );
 
   // == assign varying variables ===================================================================
   vLife = pos.w;
 
-  vRandom = random( puv.yy * 182.92 );
-
+  vec4 dice = random( puv.yy * 182.92 );
   vColor.xyz = (
-    vRandom.y < 0.8
-    ? pow( catColor( TAU * ( ( vRandom.x * 2.0 - 1.0 ) * colorVar + colorOffset ) ), vec3( 2.0 ) )
+    dice.y < 0.8
+    ? pow( catColor( TAU * ( ( dice.x * 2.0 - 1.0 ) * colorVar + 0.4 + colorOffset ) ), vec3( 2.0 ) )
     : vec3( 0.4 )
   );
 
-  vColor.w = ( velp.w < 0.5 && vel.w < 0.5 && 0.0 < vLife ) ? 1.0 : -1.0;
-
   // == compute size and direction =================================================================
-  float size = 0.005 + 0.005 * pow( vRandom.w, 2.0 );
-  vec3 dir = normalize( vel.xyz );
-  vec3 sid = normalize( cross( dir, vec3( 0.0, 1.0, 0.0 ) ) );
-  vec3 top = normalize( cross( sid, dir ) );
+  float size = 0.1 + 0.1 * pow( dice.w, 2.0 );
 
-  float theta = triIndex / 3.0 * TAU + vLife * 1.0;
-  vec2 tri = vec2( sin( theta ), cos( theta ) );
-  vNormal = ( tri.x * sid + tri.y * top );
-  pos.xyz += size * vNormal;
+  pos.xy += p * size;
+
+  vUv = 0.5 + 0.5 * p;
+
+  vNormal = normalize( ( modelMatrix * vec4( 0.0, 0.0, 1.0, 0.0 ) ).xyz );
 
   vPosition = modelMatrix * vec4( pos.xyz, 1.0 );
   vec4 outPos = projectionMatrix * viewMatrix * vPosition;

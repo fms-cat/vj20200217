@@ -5,11 +5,9 @@ import { Lambda } from '../heck/components/Lambda';
 import { Material } from '../heck/Material';
 import { Mesh } from '../heck/components/Mesh';
 import { Quad } from '../heck/components/Quad';
-import { RenderTarget } from '../heck/RenderTarget';
 import { Swap } from '@fms-cat/experimental';
 
 export interface GPUParticlesOptions {
-  target: RenderTarget;
   materialCompute: Material;
   geometryRender: Geometry;
   materialRender: Material;

@@ -9,6 +9,8 @@ const gl = canvas.getContext( 'webgl' )!;
 gl.lineWidth( 1 );
 
 const glCat = new GLCat( gl );
+
+glCat.getExtension( 'OES_standard_derivatives', true );
 glCat.getExtension( 'OES_texture_float', true );
 glCat.getExtension( 'OES_texture_float_linear', true );
 

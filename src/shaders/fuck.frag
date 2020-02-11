@@ -107,9 +107,10 @@ void main() {
   color.y = 0.0 + 0.1 * vUv.y + 0.9 * color.y;
   color.z = 0.1 + 0.8 * color.z;
 
-  // gl_FragColor = vec4( color, 1.0 );
-  gl_FragData[ 0 ] = vec4( vUv, 0.5, 1.0 );
-  gl_FragData[ 1 ] = vPosition;
-  gl_FragData[ 2 ] = vec4( vNormal, 1.0 );
+  // gl_FragData[ 2 ] = vec4( color, 1.0 );
+  gl_FragData[ 0 ] = vPosition;
+  gl_FragData[ 1 ] = vec4( vNormal, 1.0 );
+  // gl_FragData[ 2 ] = vec4( vUv, 0.5, 1.0 );
+  gl_FragData[ 2 ] = vec4( 0.5, 0.5, 0.5, 1.0 );
   gl_FragData[ 3 ] = vec4( vec3( 1.0, 0.0, 0.0 ), MTL_PBR );
 }

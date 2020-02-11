@@ -43,7 +43,7 @@ export class Material {
     return SHADERPOOL.getProgram( this.vertWithDefines, this.fragWithDefines );
   }
 
-  public blend: [ GLenum, GLenum ] = [ GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA ];
+  public blend: [ GLenum, GLenum ] = [ GL.ONE, GL.ZERO ];
 
   public constructor(
     vert: string,

@@ -1,5 +1,4 @@
 import { BufferRenderTarget } from '../heck/BufferRenderTarget';
-import { DISPLAY } from '../heck/DISPLAY';
 import { Entity } from '../heck/Entity';
 import { GL } from '@fms-cat/glcat-ts';
 import { Lambda } from '../heck/components/Lambda';
@@ -9,24 +8,10 @@ import { PerspectiveCamera } from '../heck/components/PerspectiveCamera';
 import { Quad } from '../heck/components/Quad';
 import { RenderTarget } from '../heck/RenderTarget';
 import { Shaders } from '../shaders';
+import { loadImageTexture } from '../utils/loadImageTexture';
 
-const textureEnv = DISPLAY.glCat.createTexture();
-textureEnv.setTextureFromArray( 1, 1, new Uint8Array( [ 0, 0, 0, 0 ] ) );
-
-const imageLuxo = new Image();
-imageLuxo.onload = ( () => {
-  textureEnv.setTexture( imageLuxo );
-} );
-imageLuxo.src = require( '../images/luxo.png' ).default;
-
-const textureBRDFLUT = DISPLAY.glCat.createTexture();
-textureBRDFLUT.setTextureFromArray( 1, 1, new Uint8Array( [ 0, 0, 0, 0 ] ) );
-
-const imageBRDFLUT = new Image();
-imageBRDFLUT.onload = ( () => {
-  textureBRDFLUT.setTexture( imageBRDFLUT );
-} );
-imageBRDFLUT.src = require( '../images/brdf-lut.png' ).default;
+const textureEnv = loadImageTexture( require( '../images/luxo.png' ).default );
+const textureBRDFLUT = loadImageTexture( require( '../images/brdf-lut.png' ).default );
 
 export interface CameraEntityOptions {
   root: Entity;
@@ -66,6 +51,7 @@ export class CameraEntity {
     this.__camera = new PerspectiveCamera( {
       scene: this.__root,
       renderTarget: cameraTarget,
+      near: 0.1,
       far: 20.0
     } );
     this.__entity.components.push( this.__camera );
@@ -103,6 +89,12 @@ export class CameraEntity {
           'lightPos',
           '3f',
           ...light.entity.transform.position.elements
+        );
+
+        shadingMaterial.addUniform(
+          'lightColor',
+          '3f',
+          ...light.color
         );
 
         shadingMaterial.addUniformVector(

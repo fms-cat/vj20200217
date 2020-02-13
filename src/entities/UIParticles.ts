@@ -5,11 +5,54 @@ import { GPUParticles } from './GPUParticles';
 import { Geometry } from '../heck/Geometry';
 import { InstancedGeometry } from '../heck/InstancedGeometry';
 import { Material } from '../heck/Material';
+import { MeshCull } from '../heck/components/Mesh';
 import { Shaders } from '../shaders';
 import { TRIANGLE_STRIP_QUAD } from '@fms-cat/experimental';
+import { createFontSpritesheetSDF } from '../utils/createFontSpritesheetSDF';
+import { createImageSDF } from '../utils/createImageSDF';
 import { loadImageTexture } from '../utils/loadImageTexture';
 
-const textureMissing = loadImageTexture( require( '../images/missing.png' ).default );
+const textureMissing = DISPLAY.glCat.createTexture();
+textureMissing.setZeroTexture();
+loadImageTexture( {
+  texture: textureMissing,
+  url: require( '../images/missing.png' ).default
+} );
+
+const textureWord = DISPLAY.glCat.createTexture();
+textureWord.setZeroTexture();
+createFontSpritesheetSDF( {
+  texture: textureWord,
+  charSize: [ 256, 64 ],
+  matrix: [ 2, 8 ],
+  baseline: 0.75,
+  font: '40px "Roboto"',
+  chars: [
+    'Button', 'Button',
+    'Confirm', 'Cancel',
+    'Upload', 'Submit',
+    'OK', 'Login',
+    'Create', 'Details',
+    'Post', 'Copy',
+    'Next', 'More',
+    'Share', 'Edit'
+  ]
+} );
+
+const textureChar = DISPLAY.glCat.createTexture();
+textureChar.setZeroTexture();
+createFontSpritesheetSDF( {
+  texture: textureChar,
+  charSize: [ 64, 64 ],
+  font: '700 48px "Exo"',
+} );
+
+const textureIcon = DISPLAY.glCat.createTexture();
+textureIcon.setZeroTexture();
+createImageSDF( {
+  texture: textureIcon,
+  url: require( '../images/pdg-icons.png' ).default
+} );
 
 export interface UIParticlesOptions {
   particlesSqrt: number;
@@ -43,6 +86,7 @@ export class UIParticles {
       computeHeight: options.particlesSqrt,
       computeNumBuffers: 1
     } );
+    this.__gpuParticles.meshRender.cull = MeshCull.None;
   }
 
   private __createMaterialCompute( options: UIParticlesOptions ): Material {
@@ -63,9 +107,7 @@ export class UIParticles {
           true,
           false,
           true
-        ).catch( ( e ) => {
-          console.error( e );
-        } );
+        );
       } );
     }
 
@@ -117,8 +159,8 @@ export class UIParticles {
 
   private __createMaterialRender( options: UIParticlesOptions ): Material {
     const material = new Material(
-      Shaders.uiParticlesRenderVert,
-      Shaders.uiParticlesRenderFrag,
+      require( '../shaders/ui-particles-render.vert' ).default,
+      require( '../shaders/ui-particles-render.frag' ).default,
       {
         'USE_CLIP': 'true',
         'USE_VERTEX_COLOR': 'true'
@@ -126,7 +168,32 @@ export class UIParticles {
     );
     material.addUniform( 'ppp', '1f', UIParticles.__ppp );
     material.addUniformTexture( 'samplerRandomStatic', options.textureRandomStatic );
+    material.addUniformTexture( 'samplerChar', textureChar );
+    material.addUniformTexture( 'samplerWord', textureWord );
+    material.addUniformTexture( 'samplerIcon', textureIcon );
     material.addUniformTexture( 'samplerDoublequoteRandom', textureMissing );
+
+    if ( module.hot ) {
+      module.hot.accept( '../shaders/ui-particles-render.vert', () => {
+        material.compileShaderAsync(
+          require( '../shaders/ui-particles-render.vert' ).default,
+          require( '../shaders/ui-particles-render.frag' ).default,
+          true,
+          true,
+          false
+        );
+      } );
+
+      module.hot.accept( '../shaders/ui-particles-render.frag', () => {
+        material.compileShaderAsync(
+          require( '../shaders/ui-particles-render.vert' ).default,
+          require( '../shaders/ui-particles-render.frag' ).default,
+          true,
+          false,
+          true
+        );
+      } );
+    }
 
     return material;
   }

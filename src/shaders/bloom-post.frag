@@ -11,5 +11,5 @@ void main() {
     vec2 suv = mix( vec2( 1.0 - fuck ), vec2( 1.0 - 0.5 * fuck ), vUv );
     gl_FragColor += texture2D( samplerWet, suv );
   }
-  gl_FragColor.xyz = pow( max( vec3( 0.0 ), gl_FragColor.xyz ), vec3( 0.4545 ) );
+  gl_FragColor.xyz = max( vec3( 0.0 ), gl_FragColor.xyz );
 }

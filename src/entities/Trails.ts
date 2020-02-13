@@ -60,9 +60,7 @@ export class Trails {
           true,
           false,
           true
-        ).catch( ( e ) => {
-          console.error( e );
-        } );
+        );
       } );
     }
 
@@ -154,8 +152,8 @@ export class Trails {
 
   private __createMaterialRender( options: TrailsOptions ): Material {
     const material = new Material(
-      Shaders.trailsRenderVert,
-      Shaders.trailsRenderFrag,
+      require( '../shaders/trails-render.vert' ).default,
+      require( '../shaders/trails-render.frag' ).default,
       {
         'USE_CLIP': 'true',
         'USE_VERTEX_COLOR': 'true'
@@ -164,6 +162,30 @@ export class Trails {
     material.addUniform( 'colorVar', '1f', 0.1 );
     material.addUniform( 'ppp', '1f', Trails.__ppp );
     material.addUniformTexture( 'samplerRandomStatic', options.textureRandomStatic );
+
+    if ( module.hot ) {
+      module.hot.accept( '../shaders/trails-render.vert', () => {
+        material.compileShaderAsync(
+          require( '../shaders/trails-render.vert' ).default,
+          require( '../shaders/trails-render.frag' ).default,
+          true,
+          true,
+          false
+        );
+      } );
+    }
+
+    if ( module.hot ) {
+      module.hot.accept( '../shaders/trails-render.frag', () => {
+        material.compileShaderAsync(
+          require( '../shaders/trails-render.vert' ).default,
+          require( '../shaders/trails-render.frag' ).default,
+          true,
+          false,
+          true
+        );
+      } );
+    }
 
     return material;
   }

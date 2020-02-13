@@ -1,6 +1,6 @@
-#define MTL_NONE 0.0
-#define MTL_UNLIT 1.0
-#define MTL_PBR 2.0
+#define MTL_NONE 0
+#define MTL_UNLIT 1
+#define MTL_PBR 2
 
 #define PI 3.14159265359
 #define TAU 6.28318530718
@@ -22,9 +22,9 @@ uniform mat4 lightPV;
 uniform vec2 lightNearFar;
 uniform mat4 viewMatrix;
 
-uniform sampler2D sampler0; // color.rgba
-uniform sampler2D sampler1; // position.xyz, depth
-uniform sampler2D sampler2; // normal.xyz (yes, this is not good)
+uniform sampler2D sampler0; // position.xyz, depth
+uniform sampler2D sampler1; // normal.xyz (yes, this is not good)
+uniform sampler2D sampler2; // color.rgba (what is a though????)
 uniform sampler2D sampler3; // materialParams.xyz, materialId
 uniform sampler2D samplerShadow;
 uniform sampler2D samplerBRDFLUT;
@@ -35,7 +35,7 @@ struct Isect {
   vec3 position;
   float depth;
   vec3 normal;
-  float materialId;
+  int materialId;
   vec3 materialParams;
 };
 
@@ -91,17 +91,20 @@ void main() {
   isect.depth = tex0.w;
   isect.normal = tex1.xyz;
   isect.albedo = tex2.rgb;
-  isect.materialId = tex3.w - 0.5;
+  isect.materialId = int( tex3.w + 0.5 );
 
-  if ( isect.materialId < MTL_NONE ) {
-    gl_FragColor = vec4( 0.0 );
+  gl_FragColor = vec4( 0.0 );
+
+  if ( isect.materialId == MTL_NONE ) {
     return;
 
-  } else if ( isect.materialId < MTL_UNLIT ) {
-    gl_FragColor = vec4( tex0.rgb, 1.0 );
+  } else if ( isect.materialId == MTL_UNLIT ) {
+#ifdef IS_FIRST_LIGHT
+    gl_FragColor = vec4( isect.albedo, 1.0 );
+#endif
     return;
 
-  } else if ( isect.materialId < MTL_PBR ) {
+  } else if ( isect.materialId == MTL_PBR ) {
     // ref: https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/metallic-roughness.frag
 
     float roughness = tex3.x;

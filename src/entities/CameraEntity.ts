@@ -1,4 +1,5 @@
 import { BufferRenderTarget } from '../heck/BufferRenderTarget';
+import { DISPLAY } from '../heck/DISPLAY';
 import { Entity } from '../heck/Entity';
 import { GL } from '@fms-cat/glcat-ts';
 import { Lambda } from '../heck/components/Lambda';
@@ -10,8 +11,19 @@ import { RenderTarget } from '../heck/RenderTarget';
 import { Shaders } from '../shaders';
 import { loadImageTexture } from '../utils/loadImageTexture';
 
-const textureEnv = loadImageTexture( require( '../images/luxo.png' ).default );
-const textureBRDFLUT = loadImageTexture( require( '../images/brdf-lut.png' ).default );
+const textureEnv = DISPLAY.glCat.createTexture();
+textureEnv.setZeroTexture();
+loadImageTexture( {
+  texture: textureEnv,
+  url: require( '../images/luxo.png' ).default
+} );
+
+const textureBRDFLUT = DISPLAY.glCat.createTexture();
+textureBRDFLUT.setZeroTexture();
+loadImageTexture( {
+  texture: textureBRDFLUT,
+  url: require( '../images/brdf-lut.png' ).default
+} );
 
 export interface CameraEntityOptions {
   root: Entity;
@@ -56,7 +68,7 @@ export class CameraEntity {
     } );
     this.__entity.components.push( this.__camera );
 
-    options.lights.forEach( ( light, iLight ) => {
+    const shadingMaterials = options.lights.map( ( light, iLight ) => {
       const shadingMaterial = new Material(
         Shaders.quadVert,
         require( '../shaders/shading.frag' ).default,
@@ -124,6 +136,22 @@ export class CameraEntity {
       } );
       shadingQuad.clear = iLight === 0 ? [] : false;
       this.__entity.components.push( shadingQuad );
+
+      return shadingMaterial;
     } );
+
+    if ( module.hot ) {
+      module.hot.accept( '../shaders/shading.frag', () => {
+        shadingMaterials.forEach( ( material ) => {
+          material.compileShaderAsync(
+            Shaders.quadVert,
+            require( '../shaders/shading.frag' ).default,
+            true,
+            false,
+            true
+          );
+        } );
+      } );
+    }
   }
 }

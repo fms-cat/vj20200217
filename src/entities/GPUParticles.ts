@@ -29,6 +29,10 @@ export class GPUParticles {
 
   private __meshRender: Mesh;
 
+  public get meshRender(): Mesh {
+    return this.__meshRender;
+  }
+
   public get materialCompute(): Material {
     return this.__quadCompute.material;
   }

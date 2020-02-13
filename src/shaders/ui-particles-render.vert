@@ -6,6 +6,14 @@
 #define lofi(i,m) (floor((i)/(m))*(m))
 #define lofir(i,m) (floor((i+0.5)/(m))*(m))
 
+#define MODE_RECT 0
+#define MODE_GRID 1
+#define MODE_CIRCLE 2
+#define MODE_CHAR 3
+#define MODE_BUTTON 4
+#define MODE_ICON 5
+#define MODES 6
+
 // -------------------------------------------------------------------------------------------------
 
 attribute vec2 computeUV;
@@ -15,8 +23,9 @@ varying vec4 vPosition;
 varying vec3 vNormal;
 varying vec4 vColor;
 varying vec2 vUv;
+varying vec4 vDice;
+varying float vMode;
 varying float vLife;
-varying float vIsOkayToDraw;
 
 uniform vec2 resolution;
 uniform vec2 resolutionCompute;
@@ -60,29 +69,56 @@ void main() {
   vec2 dppix = vec2( 1.0 ) / resolutionCompute;
 
   // == fetch texture ==============================================================================
-  vec4 pos = texture2D( samplerCompute, puv );
-  vec4 vel = texture2D( samplerCompute, puv + dppix * vec2( 1.0, 0.0 ) );
+  vec4 tex0 = texture2D( samplerCompute, puv );
+  vec4 tex1 = texture2D( samplerCompute, puv + dppix * vec2( 1.0, 0.0 ) );
 
   // == assign varying variables ===================================================================
-  vLife = pos.w;
-
-  vec4 dice = random( puv.yy * 182.92 );
-  vColor.xyz = (
-    dice.y < 0.8
-    ? pow( catColor( TAU * ( ( dice.x * 2.0 - 1.0 ) * colorVar + 0.4 + colorOffset ) ), vec3( 2.0 ) )
-    : vec3( 0.4 )
-  );
-
-  // == compute size and direction =================================================================
-  float size = 0.1 + 0.1 * pow( dice.w, 2.0 );
-
-  pos.xy += p * size;
-
-  vUv = 0.5 + 0.5 * p;
+  vDice = random( tex1.xy * 182.92 );
 
   vNormal = normalize( ( modelMatrix * vec4( 0.0, 0.0, 1.0, 0.0 ) ).xyz );
 
-  vPosition = modelMatrix * vec4( pos.xyz, 1.0 );
+  vColor.xyz = (
+    vDice.y < 0.8
+    ? pow( catColor( TAU * ( ( vDice.x * 2.0 - 1.0 ) * colorVar + 0.4 + colorOffset ) ), vec3( 2.0 ) )
+    : vec3( 0.4 )
+  );
+
+  vUv = 0.5 + 0.5 * p;
+
+  vLife = tex0.w;
+
+  vMode = tex1.w;
+  int mode = int( vMode );
+
+  // == compute size and direction =================================================================
+  vPosition = vec4( tex0.xyz, 1.0 );
+
+  vec2 size;
+
+  if ( mode == MODE_RECT ) {
+    size = 1.0 * vDice.xy;
+
+  } else if ( mode == MODE_GRID ) {
+    size = vec2( 0.25 + 0.25 * vDice.x );
+
+  } else if ( mode == MODE_CIRCLE ) {
+    size = vec2( 1.0 * vDice.x );
+
+  } else if ( mode == MODE_CHAR ) {
+    size = vec2( 0.2 + 0.2 * vDice.x );
+
+  } else if ( mode == MODE_BUTTON ) {
+    size = vec2( 1.0, 0.4 ) * ( 0.2 + 0.2 * vDice.x );
+
+  } else if ( mode == MODE_ICON ) {
+    size = vec2( 0.2 + 0.2 * vDice.x );
+
+  }
+
+  vPosition.xy += p * size;
+
+  // == send the vertex position ===================================================================
+  vPosition = modelMatrix * vPosition;
   vec4 outPos = projectionMatrix * viewMatrix * vPosition;
   outPos.x *= resolution.y / resolution.x;
   gl_Position = outPos;

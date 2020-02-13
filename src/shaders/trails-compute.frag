@@ -1,5 +1,5 @@
 #define PARTICLE_LIFE_LENGTH 5.0
-#define SPHERE_RADIUS 2.0
+#define SPHERE_RADIUS 1.0
 
 #define HUGE 9E16
 #define PI 3.14159265
@@ -12,8 +12,6 @@
 // ------
 
 precision highp float;
-
-
 
 uniform float time;
 uniform float beat;
@@ -37,7 +35,7 @@ uniform float noisePhase;
 
 // ------
 
-vec2 vInvert( vec2 _uv ) {
+vec2 uvInvT( vec2 _uv ) {
   return vec2( 0.0, 1.0 ) + vec2( 1.0, -1.0 ) * _uv;
 }
 
@@ -108,7 +106,7 @@ vec3 uneune3( float i, float p ) {
 void main() {
   vec2 uv = gl_FragCoord.xy / resolution;
   vec2 puv = vec2( ( floor( gl_FragCoord.x / ppp ) * ppp + 0.5 ) / resolution.x, uv.y );
-  float mode = mod( gl_FragCoord.x, ppp );
+  float pixId = mod( gl_FragCoord.x, ppp );
   vec2 dpix = vec2( 1.0 ) / resolution;
 
   float dt = deltaTime;
@@ -116,17 +114,14 @@ void main() {
   // == if it is not head of particles =============================================================
   if ( ppp < gl_FragCoord.x ) {
     puv.x -= ppp / resolution.x;
-    vec4 pos = texture2D( samplerCompute, puv );
-    vec4 vel = texture2D( samplerCompute, puv + dpix * vec2( 1.0, 0.0 ) );
+    vec4 tex0 = texture2D( samplerCompute, puv );
+    vec4 tex1 = texture2D( samplerCompute, puv + dpix * vec2( 1.0, 0.0 ) );
 
-    // pos.y += 9.0 * dt;
-    // pos.xy += vec2( sin( 0.01 * time ), cos( 0.01 * time ) ) * dt;
-    // pos.xy = rotate2D( length( pos.xy ) * 0.1 * dt ) * pos.xy;
-    pos.w = saturate( pos.w - 1.0 / trailLength );
+    tex0.w = saturate( tex0.w - 1.0 / trailLength ); // decrease the life
 
     gl_FragColor = (
-      mode < 1.0 ? pos :
-      vel
+      pixId < 1.0 ? tex0 :
+      tex1
     );
     return;
   }
@@ -135,8 +130,13 @@ void main() {
   vec4 seed = texture2D( samplerRandom, puv );
   prng( seed );
 
-  vec4 pos = texture2D( samplerCompute, puv );
-  vec4 vel = texture2D( samplerCompute, puv + dpix * vec2( 1.0, 0.0 ) );
+  vec4 tex0 = texture2D( samplerCompute, puv );
+  vec4 tex1 = texture2D( samplerCompute, puv + dpix * vec2( 1.0, 0.0 ) );
+
+  vec3 pos = tex0.xyz;
+  float life = tex0.w;
+  vec3 vel = tex1.xyz;
+  float jumpFlag = tex1.w;
 
   float timing = mix( 0.0, PARTICLE_LIFE_LENGTH, floor( puv.y * trails ) / trails );
   timing += lofi( time, PARTICLE_LIFE_LENGTH );
@@ -152,14 +152,15 @@ void main() {
   ) {
     dt = time - timing;
 
-    pos.xyz = SPHERE_RADIUS * randomSphere( seed );
+    pos = SPHERE_RADIUS * randomSphere( seed );
 
-    vel.xyz = 1.0 * randomSphere( seed );
-    vel.w = 1.0; // jumping flag
+    vel = 1.0 * randomSphere( seed );
 
-    pos.w = 1.0; // life
+    life = 1.0;
+
+    jumpFlag = 1.0;
   } else {
-    vel.w = 0.0; // remove jumping flag
+    jumpFlag = 0.0; // remove jumping flag
   }
 
   // == update particles ===========================================================================
@@ -169,19 +170,19 @@ void main() {
   vel.zx += dt * 20.0 * vec2( -1.0, 1.0 ) * normalize( posFromSphereCenter.xz );
 
   // sphere
-  vel.xyz += dt * 20.0 * ( SPHERE_RADIUS - length( posFromSphereCenter ) ) * normalize( posFromSphereCenter );
+  vel += dt * 20.0 * ( SPHERE_RADIUS - length( posFromSphereCenter ) ) * normalize( posFromSphereCenter );
 
   // noise field
-  vel.xyz += 40.0 * vec3(
+  vel += 40.0 * vec3(
     noise( vec4( 0.7 * pos.xyz, 1.485 + sin( time * 0.1 ) + noisePhase ) ),
     noise( vec4( 0.7 * pos.xyz, 3.485 + sin( time * 0.1 ) + noisePhase ) ),
     noise( vec4( 0.7 * pos.xyz, 5.485 + sin( time * 0.1 ) + noisePhase ) )
   ) * dt;
 
   // resistance
-  vel.xyz *= exp( -10.0 * dt );
+  vel *= exp( -10.0 * dt );
 
-  vec3 v = vel.xyz;
+  vec3 v = vel;
   float vmax = max( abs( v.x ), max( abs( v.y ), abs( v.z ) ) );
   // v *= (
   //   abs( v.x ) == vmax ? vec3( 1.0, 0.0, 0.0 ) :
@@ -190,11 +191,11 @@ void main() {
   // );
 
   // pos.xyz += velScale * v * dt;
-  pos.xyz += v * dt;
-  pos.w -= dt / PARTICLE_LIFE_LENGTH;
+  pos += v * dt;
+  life -= dt / PARTICLE_LIFE_LENGTH;
 
   gl_FragColor = (
-    mode < 1.0 ? pos :
-    vel
+    pixId < 1.0 ? vec4( pos, life ) :
+    vec4( vel, jumpFlag )
   );
 }

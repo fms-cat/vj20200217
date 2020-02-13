@@ -8,10 +8,6 @@ import posToDepthFrag from './pos-to-depth.frag';
 import quadVert from './quad.vert';
 import returnFrag from './return.frag';
 import shadowBlurFrag from './shadow-blur.frag';
-import trailsRenderFrag from './trails-render.frag';
-import trailsRenderVert from './trails-render.vert';
-import uiParticlesRenderFrag from './ui-particles-render.frag';
-import uiParticlesRenderVert from './ui-particles-render.vert';
 
 export const Shaders = {
   bloomBlurFrag,
@@ -24,8 +20,4 @@ export const Shaders = {
   quadVert,
   returnFrag,
   shadowBlurFrag,
-  trailsRenderFrag,
-  trailsRenderVert,
-  uiParticlesRenderFrag,
-  uiParticlesRenderVert
 };

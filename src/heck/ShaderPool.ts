@@ -47,17 +47,21 @@ export class ShaderPool {
   }
 
   public getProgramAsync( vert: string, frag: string ): Promise<GLCatProgram> {
-    const vertex = this.getVertexShader( vert );
-    const fragment = this.getFragmentShader( frag );
+    try {
+      const vertex = this.getVertexShader( vert );
+      const fragment = this.getFragmentShader( frag );
 
-    let program = this.__getProgramFromMap( vertex, fragment );
-    if ( program ) { return Promise.resolve( program ); }
+      let program = this.__getProgramFromMap( vertex, fragment );
+      if ( program ) { return Promise.resolve( program ); }
 
-    program = DISPLAY.glCat.createProgram();
-    this.__setProgramToMap( vertex, fragment, program );
-    return program.linkAsync( vertex, fragment ).then( () => {
-      return program!;
-    } );
+      program = DISPLAY.glCat.createProgram();
+      this.__setProgramToMap( vertex, fragment, program );
+      return program.linkAsync( vertex, fragment ).then( () => {
+        return program!;
+      } );
+    } catch ( e ) {
+      return Promise.reject( e );
+    }
   }
 
   public deleteProgram(

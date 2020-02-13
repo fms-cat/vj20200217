@@ -7,6 +7,11 @@ import { RenderTarget } from '../heck/RenderTarget';
 import { Shaders } from '../shaders';
 import { Swap } from '@fms-cat/experimental';
 
+export interface BloomOptions {
+  input: GLCatTexture;
+  target: RenderTarget;
+}
+
 export class Bloom {
   private __entity: Entity;
 
@@ -14,12 +19,12 @@ export class Bloom {
     return this.__entity;
   }
 
-  public constructor( input: GLCatTexture, target: RenderTarget ) {
+  public constructor( options: BloomOptions ) {
     this.__entity = new Entity();
 
     const swap = new Swap(
-      new BufferRenderTarget( { width: target.width, height: target.height } ),
-      new BufferRenderTarget( { width: target.width, height: target.height } )
+      new BufferRenderTarget( { width: options.target.width, height: options.target.height } ),
+      new BufferRenderTarget( { width: options.target.width, height: options.target.height } )
     );
 
     // -- pre ----------------------------------------------------------------------------------------
@@ -27,7 +32,7 @@ export class Bloom {
       Shaders.quadVert,
       Shaders.bloomPreFrag
     );
-    materialBloomPre.addUniformTexture( 'sampler0', input );
+    materialBloomPre.addUniformTexture( 'sampler0', options.input );
 
     this.__entity.components.push( new Quad( {
       target: swap.o,
@@ -76,11 +81,11 @@ export class Bloom {
       Shaders.quadVert,
       Shaders.bloomPostFrag
     );
-    materialBloomPost.addUniformTexture( 'samplerDry', input );
+    materialBloomPost.addUniformTexture( 'samplerDry', options.input );
     materialBloomPost.addUniformTexture( 'samplerWet', swap.i.texture );
 
     this.__entity.components.push( new Quad( {
-      target,
+      target: options.target,
       material: materialBloomPost
     } ) );
   }

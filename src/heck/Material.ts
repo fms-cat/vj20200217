@@ -1,5 +1,6 @@
 import { GL, GLCatProgram, GLCatProgramUniformType, GLCatTexture } from '@fms-cat/glcat-ts';
 import { DISPLAY } from './DISPLAY';
+import { ERRORMAN } from '../utils/ERRORMAN';
 import { SHADERPOOL } from './ShaderPool';
 
 export class Material {
@@ -93,30 +94,36 @@ export class Material {
     gl.blendFunc( ...this.blend );
   }
 
-  public compileShaderAsync(
+  public async compileShaderAsync(
     vert: string,
     frag: string,
     disposePrevProgram = false,
     disposePrevVertex = false,
     disposePrevFragment = false
   ): Promise<void> {
-    return SHADERPOOL.getProgramAsync(
+    console.log(this.__definesString);
+    const program = await SHADERPOOL.getProgramAsync(
       this.__definesString + vert,
       this.__definesString + frag
-    ).then( () => {
-      if ( disposePrevProgram ) {
-        SHADERPOOL.deleteProgram(
-          this.__definesString + this.vert,
-          this.__definesString + this.frag,
-          disposePrevVertex,
-          disposePrevFragment
-        );
-      }
-
-      this.vert = vert;
-      this.frag = frag;
-      return;
+    ).catch( ( e ) => {
+      console.error( e );
+      ERRORMAN.emit( e );
+      // throw e;
     } );
+
+    if ( !program ) { return; }
+
+    if ( disposePrevProgram ) {
+      SHADERPOOL.deleteProgram(
+        this.__definesString + this.vert,
+        this.__definesString + this.frag,
+        disposePrevVertex,
+        disposePrevFragment
+      );
+    }
+
+    this.vert = vert;
+    this.frag = frag;
   }
 
   protected get __definesString(): string {

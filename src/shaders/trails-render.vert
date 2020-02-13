@@ -71,7 +71,7 @@ void main() {
 
   vColor.xyz = (
     vRandom.y < 0.8
-    ? pow( catColor( TAU * ( ( vRandom.x * 2.0 - 1.0 ) * colorVar + colorOffset ) ), vec3( 2.0 ) )
+    ? pow( catColor( TAU * ( ( vRandom.x * 2.0 - 1.0 ) * colorVar + 0.6 + colorOffset ) ), vec3( 2.0 ) )
     : vec3( 0.4 )
   );
 

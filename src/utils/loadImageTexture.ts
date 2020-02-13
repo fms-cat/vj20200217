@@ -1,15 +1,11 @@
-import { DISPLAY } from '../heck/DISPLAY';
 import { GLCatTexture } from '@fms-cat/glcat-ts';
+import { loadImage } from './loadImage';
 
-export function loadImageTexture( url: string ): GLCatTexture {
-  const texture = DISPLAY.glCat.createTexture();
-  texture.setTextureFromArray( 1, 1, new Uint8Array( [ 0, 0, 0, 0 ] ) );
-
-  const image = new Image();
-  image.onload = ( () => {
-    texture.setTexture( image );
-  } );
-  image.src = url;
-
-  return texture;
+export async function loadImageTexture( options: {
+  url: string;
+  texture: GLCatTexture;
+} ): Promise<void> {
+  const { url, texture } = options;
+  const image = await loadImage( url );
+  texture.setTexture( image );
 }

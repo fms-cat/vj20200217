@@ -1,8 +1,8 @@
 #define saturate(x) clamp(x,0.,1.)
 #define linearstep(a,b,x) saturate(((x)-(a))/((b)-(a)))
 
-#define MTL_UNLIT 1.0
-#define MTL_PBR 2.0
+#define MTL_UNLIT 1
+#define MTL_PBR 2
 
 #extension GL_EXT_draw_buffers : require
 

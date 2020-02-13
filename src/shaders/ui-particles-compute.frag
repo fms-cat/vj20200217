@@ -1,4 +1,4 @@
-#define PARTICLE_LIFE_LENGTH 5.0
+#define PARTICLE_LIFE_LENGTH 1.0
 
 #define HUGE 9E16
 #define PI 3.14159265
@@ -7,6 +7,8 @@
 #define saturate(i) clamp(i,0.,1.)
 #define lofi(i,m) (floor((i)/(m))*(m))
 #define lofir(i,m) (floor((i)/(m)+.5)*(m))
+
+#define MODES 6
 
 // ------
 
@@ -33,7 +35,7 @@ uniform float noisePhase;
 
 // ------
 
-vec2 vInvert( vec2 _uv ) {
+vec2 uvInvT( vec2 _uv ) {
   return vec2( 0.0, 1.0 ) + vec2( 1.0, -1.0 ) * _uv;
 }
 
@@ -104,7 +106,7 @@ vec3 uneune3( float i, float p ) {
 void main() {
   vec2 uv = gl_FragCoord.xy / resolution;
   vec2 puv = vec2( ( floor( gl_FragCoord.x / ppp ) * ppp + 0.5 ) / resolution.x, uv.y );
-  float mode = mod( gl_FragCoord.x, ppp );
+  float pixId = mod( gl_FragCoord.x, ppp );
   vec2 dpix = vec2( 1.0 ) / resolution;
 
   float dt = deltaTime;
@@ -113,8 +115,13 @@ void main() {
   vec4 seed = texture2D( samplerRandom, puv );
   prng( seed );
 
-  vec4 pos = texture2D( samplerCompute, puv );
-  vec4 vel = texture2D( samplerCompute, puv + dpix * vec2( 1.0, 0.0 ) );
+  vec4 tex0 = texture2D( samplerCompute, puv );
+  vec4 tex1 = texture2D( samplerCompute, puv + dpix * vec2( 1.0, 0.0 ) );
+
+  vec3 pos = tex0.xyz;
+  float life = tex0.w;
+  vec3 vel = tex1.xyz;
+  int mode = int( tex1.w );
 
   float timing = mix(
     0.0,
@@ -134,25 +141,24 @@ void main() {
   ) {
     dt = time - timing;
 
-    pos.xyz = vec3( 5.0, 5.0, 1.0 ) * randomBox( seed );
+    pos.xyz = vec3( 5.0, 5.0, 3.0 ) * randomBox( seed );
 
     vel.xyz = 1.0 * randomSphere( seed );
 
-    pos.w = 1.0; // life
+    life = 1.0;
+
+    mode = int( prng( seed ) * float( MODES ) );
   } else {
     // do nothing
     // if you want to remove init frag from the particle, do at here
   }
 
   // == update particles ===========================================================================
-  vec3 v = vel.xyz;
-  float vmax = max( abs( v.x ), max( abs( v.y ), abs( v.z ) ) );
-
-  pos.xyz += vec3( 1.0, 0.0, 0.0 ) * dt;
-  pos.w -= dt / PARTICLE_LIFE_LENGTH;
+  pos += vec3( 0.5, 0.0, 0.0 ) * dt;
+  life -= dt / PARTICLE_LIFE_LENGTH;
 
   gl_FragColor = (
-    mode < 1.0 ? pos :
-    vel
+    pixId < 1.0 ? vec4( pos, life ) :
+    vec4( vel, mode )
   );
 }

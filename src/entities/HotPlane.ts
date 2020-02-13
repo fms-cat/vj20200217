@@ -81,9 +81,7 @@ export class HotPlane {
           true,
           false,
           true
-        ).catch( ( e ) => {
-          console.error( e );
-        } );
+        );
       } );
     }
 

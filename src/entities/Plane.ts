@@ -1,10 +1,9 @@
 import { Mesh, MeshCull } from '../heck/components/Mesh';
-import { Quaternion, TRIANGLE_STRIP_QUAD_3D, TRIANGLE_STRIP_QUAD_NORMAL, TRIANGLE_STRIP_QUAD_UV, Vector3 } from '@fms-cat/experimental';
+import { TRIANGLE_STRIP_QUAD_3D, TRIANGLE_STRIP_QUAD_NORMAL, TRIANGLE_STRIP_QUAD_UV } from '@fms-cat/experimental';
 import { DISPLAY } from '../heck/DISPLAY';
 import { Entity } from '../heck/Entity';
 import { GL } from '@fms-cat/glcat-ts';
 import { Geometry } from '../heck/Geometry';
-import { Lambda } from '../heck/components/Lambda';
 import { Material } from '../heck/Material';
 import { Shaders } from '../shaders';
 
@@ -24,23 +23,19 @@ export class Plane {
     return this.__entity;
   }
 
-  public constructor() {
+  public constructor( options: {
+    frag: string;
+  } ) {
+    const { frag } = options;
+
     this.__entity = new Entity();
 
     this.__geometry = this.__createGeoemtry();
-    this.__material = this.__createMaterial();
+    this.__material = this.__createMaterial( frag );
 
     this.__mesh = new Mesh( this.__geometry, this.__material );
     this.__mesh.cull = MeshCull.None;
     this.__entity.components.push( this.__mesh );
-
-    const lambda = new Lambda( ( event ) => {
-      event.entity.transform.rotation = Quaternion.fromAxisAngle(
-        new Vector3( [ 1.0, 1.0, 0.0 ] ).normalized,
-        event.time
-      );
-    } );
-    this.__entity.components.push( lambda );
   }
 
   protected __createGeoemtry(): Geometry {
@@ -76,8 +71,8 @@ export class Plane {
     return geometry;
   }
 
-  protected __createMaterial(): Material {
-    const material = new Material( Shaders.objectVert, Shaders.normalFrag );
+  protected __createMaterial( frag: string ): Material {
+    const material = new Material( Shaders.objectVert, frag );
 
     return material;
   }

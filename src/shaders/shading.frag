@@ -16,6 +16,7 @@ precision highp float;
 varying vec2 vUv;
 
 uniform vec3 cameraPos;
+uniform vec2 cameraNearFar;
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform mat4 lightPV;
@@ -77,7 +78,20 @@ float getShadow( Isect isect, AngularInfo aI ) {
   float md = depth - tex.x;
   float p = linearstep( 0.2, 1.0, variance / ( variance + md * md ) );
 
-  return md < 0.0 ? 1.0 : p;
+  return mix(
+    md < 0.0 ? 1.0 : p,
+    1.0,
+    edgeClip
+  );
+}
+
+float calcDepth( float z ) {
+  float near = cameraNearFar.x;
+  float far = cameraNearFar.y;
+  float d = 1.0 / ( far - near );
+  float a = -( near + far ) * d;
+  float b = -2.0 * near * far * d;
+  return linearstep( near, far, -b / ( -z - a ) );
 }
 
 void main() {
@@ -94,15 +108,19 @@ void main() {
   isect.materialId = int( tex3.w + 0.5 );
 
   gl_FragColor = vec4( 0.0 );
+// #ifdef IS_FIRST_LIGHT
+  // gl_FragColor = vec4( 0.5 + 0.5 * isect.normal, 1.0 );
+  // gl_FragColor = vec4( vec3( calcDepth( tex0.w ) ), 1.0 );
+// #endif
+  // return;
 
   if ( isect.materialId == MTL_NONE ) {
-    return;
+    // do nothing
 
   } else if ( isect.materialId == MTL_UNLIT ) {
 #ifdef IS_FIRST_LIGHT
     gl_FragColor = vec4( isect.albedo, 1.0 );
 #endif
-    return;
 
   } else if ( isect.materialId == MTL_PBR ) {
     // ref: https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/metallic-roughness.frag
@@ -153,7 +171,7 @@ void main() {
 
     gl_FragColor = vec4( color, 1.0 );
 
-    return;
-
   }
+
+  gl_FragColor.xyz *= smoothstep( 1.0, 0.7, calcDepth( tex0.w ) );
 }

@@ -77,10 +77,7 @@ export class HotPlane {
       module.hot.accept( '../shaders/fuck.frag', () => {
         material.compileShaderAsync(
           Shaders.objectVert,
-          require( '../shaders/fuck.frag' ).default,
-          true,
-          false,
-          true
+          require( '../shaders/fuck.frag' ).default
         );
       } );
     }

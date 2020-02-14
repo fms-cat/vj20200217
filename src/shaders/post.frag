@@ -57,7 +57,7 @@ void main() {
 
   vec3 col = pow( saturate( tex.xyz ), vec3( 0.4545 ) );
   col = vec3(
-    smoothstep( 0.00, 1.30, col.x + 0.3 * uv.y ),
+    smoothstep( 0.00, 1.30, col.x + 0.15 * uv.y ),
     col.y,
     0.1 + 0.8 * col.z
   );

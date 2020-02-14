@@ -5,7 +5,6 @@ import { Entity } from '../heck/Entity';
 import { GL } from '@fms-cat/glcat-ts';
 import { Geometry } from '../heck/Geometry';
 import { Material } from '../heck/Material';
-import { Shaders } from '../shaders';
 
 export class Plane {
   private __mesh: Mesh;
@@ -24,14 +23,12 @@ export class Plane {
   }
 
   public constructor( options: {
-    frag: string;
+    material: Material;
   } ) {
-    const { frag } = options;
-
     this.__entity = new Entity();
 
     this.__geometry = this.__createGeoemtry();
-    this.__material = this.__createMaterial( frag );
+    this.__material = options.material;
 
     this.__mesh = new Mesh( this.__geometry, this.__material );
     this.__mesh.cull = MeshCull.None;
@@ -69,11 +66,5 @@ export class Plane {
     geometry.mode = DISPLAY.gl.TRIANGLE_STRIP;
 
     return geometry;
-  }
-
-  protected __createMaterial( frag: string ): Material {
-    const material = new Material( Shaders.objectVert, frag );
-
-    return material;
   }
 }

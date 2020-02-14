@@ -56,10 +56,7 @@ export class Trails {
       module.hot.accept( '../shaders/trails-compute.frag', () => {
         material.compileShaderAsync(
           Shaders.quadVert,
-          require( '../shaders/trails-compute.frag' ).default,
-          true,
-          false,
-          true
+          require( '../shaders/trails-compute.frag' ).default
         );
       } );
     }
@@ -167,10 +164,7 @@ export class Trails {
       module.hot.accept( '../shaders/trails-render.vert', () => {
         material.compileShaderAsync(
           require( '../shaders/trails-render.vert' ).default,
-          require( '../shaders/trails-render.frag' ).default,
-          true,
-          true,
-          false
+          require( '../shaders/trails-render.frag' ).default
         );
       } );
     }
@@ -179,10 +173,7 @@ export class Trails {
       module.hot.accept( '../shaders/trails-render.frag', () => {
         material.compileShaderAsync(
           require( '../shaders/trails-render.vert' ).default,
-          require( '../shaders/trails-render.frag' ).default,
-          true,
-          false,
-          true
+          require( '../shaders/trails-render.frag' ).default
         );
       } );
     }

@@ -18,10 +18,15 @@ varying vec2 vUv;
 
 uniform float time;
 uniform float errorTime;
+uniform float resolvedTime;
 
 uniform sampler2D sampler0;
 
 // == common =======================================================================================
+mat2 rotate2D( float _t ) {
+  return mat2( cos( _t ), sin( _t ), -sin( _t ), cos( _t ) );
+}
+
 vec3 catColor( float t ) {
   return 0.5 + 0.5 * cos( t + vec3( 0.0, 4.0, 2.0 ) * PI / 3.0 );
 }
@@ -75,10 +80,19 @@ vec4 fetch( vec2 uv ) {
     1.0
   );
 
+  // -- check ---------------------------------------------------------------------------------------
+  float animCheck = ( 1.0 - exp( -10.0 * resolvedTime ) );
+  vec2 uvtc = rotate2D( -PI / 4.0 * animCheck ) * ( ( uvt - 0.5 ) * vec2( 2.0, 1.0 ) );
+  float thicc = 0.05 * animCheck;
+  b += (
+    step( abs( uvtc.x - 0.15 ), thicc ) * step( abs( uvtc.y + 0.05 ), 0.25 + thicc )
+    + step( abs( uvtc.x + 0.0 ), 0.15 + thicc ) * step( abs( uvtc.y - 0.2 ), thicc )
+  );
+
   // -- wipe ---------------------------------------------------------------------------------------
   float wipet = abs( uv.x - 0.5 );
-  b += step( wipet, smoothstep( 5.0, 5.8, errorTime ) );
-  if ( 0.5 < step( wipet, smoothstep( 5.2, 6.0, errorTime ) ) ) {
+  b += step( wipet, smoothstep( 0.0, 0.5, resolvedTime - 0.5 ) );
+  if ( 0.5 < step( wipet, smoothstep( 0.0, 0.5, resolvedTime - 0.6 ) ) ) {
     return vec4( 0.0 );
   }
 

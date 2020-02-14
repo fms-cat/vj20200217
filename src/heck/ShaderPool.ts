@@ -1,124 +1,81 @@
-import { GL, GLCatProgram, GLCatShader } from '@fms-cat/glcat-ts';
 import { DISPLAY } from './DISPLAY';
+import { GLCatProgram } from '@fms-cat/glcat-ts';
+import { Material } from './Material';
 
-export class ShaderPool {
-  private __vertexShaderMap: Map<string, GLCatShader> = new Map();
+export class ShaderPool<TUser> {
+  private __programMap: Map<string, GLCatProgram> = new Map();
 
-  private __fragmentShaderMap: Map<string, GLCatShader> = new Map();
+  private __ongoingPromises: Map<string, Promise<GLCatProgram>> = new Map();
 
-  private __programMap: Map<GLCatShader, Map<GLCatShader, GLCatProgram>> = new Map();
+  private __programUsersMap: Map<GLCatProgram, Set<TUser>> = new Map();
 
-  public getVertexShader( vert: string ): GLCatShader {
-    let shader = this.__vertexShaderMap.get( vert );
+  public getProgram( vert: string, frag: string, user: TUser ): GLCatProgram {
+    let program = this.__programMap.get( vert + frag );
+    if ( !program ) {
+      program = DISPLAY.glCat.lazyProgram( vert, frag );
+      this.__programMap.set( vert + frag, program );
+    }
 
-    if ( shader ) { return shader; }
-
-    shader = DISPLAY.glCat.createShader( GL.VERTEX_SHADER );
-    shader.compile( vert );
-    this.__vertexShaderMap.set( vert, shader );
-
-    return shader;
-  }
-
-  public getFragmentShader( frag: string ): GLCatShader {
-    let shader = this.__fragmentShaderMap.get( frag );
-
-    if ( shader ) { return shader; }
-
-    shader = DISPLAY.glCat.createShader( GL.FRAGMENT_SHADER );
-    shader.compile( frag );
-    this.__fragmentShaderMap.set( frag, shader );
-
-    return shader;
-  }
-
-  public getProgram( vert: string, frag: string ): GLCatProgram {
-    const vertex = this.getVertexShader( vert );
-    const fragment = this.getFragmentShader( frag );
-
-    let program = this.__getProgramFromMap( vertex, fragment );
-    if ( program ) { return program; }
-
-    program = DISPLAY.glCat.createProgram();
-    this.__setProgramToMap( vertex, fragment, program );
-    program.link( vertex, fragment );
+    this.__setUser( program, user );
 
     return program;
   }
 
-  public getProgramAsync( vert: string, frag: string ): Promise<GLCatProgram> {
-    try {
-      const vertex = this.getVertexShader( vert );
-      const fragment = this.getFragmentShader( frag );
+  public async getProgramAsync( vert: string, frag: string, user: TUser ): Promise<GLCatProgram> {
+    let program = this.__programMap.get( vert + frag );
+    if ( !program ) {
+      let promise = this.__ongoingPromises.get( vert + frag );
+      if ( !promise ) {
+        promise = DISPLAY.glCat.lazyProgramAsync( vert, frag );
+        promise.then( ( program ) => {
+          this.__programMap.set( vert + frag, program );
+          this.__ongoingPromises.delete( vert + frag );
+        } );
+        this.__ongoingPromises.set( vert + frag, promise );
+      }
 
-      let program = this.__getProgramFromMap( vertex, fragment );
-      if ( program ) { return Promise.resolve( program ); }
-
-      program = DISPLAY.glCat.createProgram();
-      this.__setProgramToMap( vertex, fragment, program );
-      return program.linkAsync( vertex, fragment ).then( () => {
-        return program!;
-      } );
-    } catch ( e ) {
-      return Promise.reject( e );
+      program = await promise;
     }
+
+    this.__setUser( program, user );
+
+    return program;
   }
 
-  public deleteProgram(
+  public discardProgram(
     vert: string,
     frag: string,
-    alsoDisposeVertex = false,
-    alsoDisposeFragment = false
+    user: TUser
   ): void {
-    const vertex = this.__vertexShaderMap.get( vert )!;
-    const fragment = this.__fragmentShaderMap.get( frag )!;
-    const program = this.__getProgramFromMap( vertex, fragment )!;
+    const program = this.__programMap.get( vert + frag )!;
 
-    program.dispose();
-    this.__deleteProgramFromMap( vertex, fragment );
+    this.__deleteUser( program, user );
 
-    if ( alsoDisposeVertex ) {
-      vertex.dispose();
-      this.__vertexShaderMap.delete( vert );
-    }
-
-    if ( alsoDisposeFragment ) {
-      fragment.dispose();
-      this.__fragmentShaderMap.delete( frag );
+    if ( this.__countUsers( program ) === 0 ) {
+      program.dispose( true );
+      this.__programMap.delete( vert + frag );
     }
   }
 
-  private __getProgramFromMap(
-    vertex: GLCatShader,
-    fragment: GLCatShader
-  ): GLCatProgram | undefined {
-    let map = this.__programMap.get( vertex );
-    if ( !map ) {
-      map = new Map();
-      this.__programMap.set( vertex, map );
+  private __setUser( program: GLCatProgram, user: TUser ): void {
+    let users = this.__programUsersMap.get( program );
+    if ( !users ) {
+      users = new Set();
+      this.__programUsersMap.set( program, users );
     }
 
-    return map.get( fragment );
+    users.add( user );
   }
 
-  private __setProgramToMap(
-    vertex: GLCatShader,
-    fragment: GLCatShader,
-    program: GLCatProgram
-  ): void {
-    let map = this.__programMap.get( vertex );
-    if ( !map ) {
-      map = new Map();
-      this.__programMap.set( vertex, map );
-    }
-
-    map.set( fragment, program );
+  private __deleteUser( program: GLCatProgram, user: TUser ): void {
+    const users = this.__programUsersMap.get( program )!;
+    users.delete( user );
   }
 
-  private __deleteProgramFromMap( vertex: GLCatShader, fragment: GLCatShader ): void {
-    const map = this.__programMap.get( vertex )!;
-    map.delete( fragment );
+  private __countUsers( program: GLCatProgram ): number {
+    const users = this.__programUsersMap.get( program )!;
+    return users.size;
   }
 }
 
-export const SHADERPOOL = new ShaderPool();
+export const SHADERPOOL = new ShaderPool<Material>();

@@ -22,5 +22,5 @@ float calcDepth( float z ) {
 void main() {
   vec4 tex = texture2D( sampler0, vUv );
   float depth = calcDepth( tex.w );
-  gl_FragColor = vec4( depth, depth * depth, 0.0, 1.0 );
+  gl_FragColor = vec4( depth, depth * depth, depth, 1.0 );
 }

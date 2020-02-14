@@ -64,6 +64,7 @@ export class Mesh extends Component {
     program.uniform1f( 'frameCount', event.frameCount );
     program.uniform2f( 'resolution', event.renderTarget.width, event.renderTarget.height );
 
+    program.uniformMatrix4fv( 'normalMatrix', event.globalTransform.matrix.inverse!.transpose.elements );
     program.uniformMatrix4fv( 'modelMatrix', event.globalTransform.matrix.elements );
     program.uniformMatrix4fv( 'viewMatrix', event.viewMatrix.elements );
     program.uniformMatrix4fv( 'projectionMatrix', event.projectionMatrix.elements );

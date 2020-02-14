@@ -92,6 +92,13 @@ export class CameraEntity {
         );
 
         shadingMaterial.addUniform(
+          'cameraNearFar',
+          '2f',
+          this.camera.near,
+          this.camera.far
+        );
+
+        shadingMaterial.addUniform(
           'cameraPos',
           '3f',
           ...this.__entity.transform.position.elements
@@ -145,10 +152,7 @@ export class CameraEntity {
         shadingMaterials.forEach( ( material ) => {
           material.compileShaderAsync(
             Shaders.quadVert,
-            require( '../shaders/shading.frag' ).default,
-            true,
-            false,
-            true
+            require( '../shaders/shading.frag' ).default
           );
         } );
       } );

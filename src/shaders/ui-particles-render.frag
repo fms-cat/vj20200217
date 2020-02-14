@@ -56,7 +56,7 @@ void main() {
 
   vec3 color = vec3( 0.0 );
 
-  if ( vLife < 0.1 && 0.5 < fract( 30.0 * vLife ) ) { discard; }
+  if ( vLife < 0.1 && 0.4 < fract( 30.0 * vLife ) ) { discard; }
 
   if ( mode == MODE_RECT ) {
     vec2 size = vec2( 0.5 );

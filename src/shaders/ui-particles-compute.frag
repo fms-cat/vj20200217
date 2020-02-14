@@ -91,16 +91,6 @@ vec3 randomBox( inout vec4 seed ) {
   return v;
 }
 
-float uneune( float i, float p ) {
-  return sin( TAU * (
-    fractSin( i ) + floor( 1.0 + 4.0 * fractSin( i + 54.12 ) ) * p
-  ) );
-}
-
-vec3 uneune3( float i, float p ) {
-  return vec3( uneune( i, p ), uneune( i + 11.87, p ), uneune( i + 21.92, p ) );
-}
-
 // ------
 
 void main() {
@@ -111,7 +101,7 @@ void main() {
 
   float dt = deltaTime;
 
-  // == prepare some vars for fuck around a particle ===============================================
+  // == prepare some vars ==========================================================================
   vec4 seed = texture2D( samplerRandom, puv );
   prng( seed );
 

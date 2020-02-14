@@ -30,5 +30,5 @@ void main() {
   suv = vUv + bv * 1.3333333333333333;
   sum += 0.35294117647058826 * texture2D( sampler0, suv );
 
-  gl_FragColor = vec4( sum.xy, tex.x, 1.0 );
+  gl_FragColor = vec4( sum.xy, tex.z, 1.0 );
 }

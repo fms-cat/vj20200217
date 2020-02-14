@@ -4,67 +4,34 @@ import { Entity } from '../heck/Entity';
 import { GPUParticles } from './GPUParticles';
 import { Geometry } from '../heck/Geometry';
 import { InstancedGeometry } from '../heck/InstancedGeometry';
+import { Lambda } from '../heck/components/Lambda';
 import { Material } from '../heck/Material';
 import { MeshCull } from '../heck/components/Mesh';
 import { Shaders } from '../shaders';
 import { TRIANGLE_STRIP_QUAD } from '@fms-cat/experimental';
 import { createFontSpritesheetSDF } from '../utils/createFontSpritesheetSDF';
-import { createImageSDF } from '../utils/createImageSDF';
-import { loadImageTexture } from '../utils/loadImageTexture';
-
-const textureMissing = DISPLAY.glCat.createTexture();
-textureMissing.setZeroTexture();
-loadImageTexture( {
-  texture: textureMissing,
-  url: require( '../images/missing.png' ).default
-} );
-
-const textureWord = DISPLAY.glCat.createTexture();
-textureWord.setZeroTexture();
-createFontSpritesheetSDF( {
-  texture: textureWord,
-  charSize: [ 256, 64 ],
-  matrix: [ 2, 8 ],
-  baseline: 0.75,
-  font: '40px "Roboto"',
-  chars: [
-    'Button', 'Button',
-    'Confirm', 'Cancel',
-    'Upload', 'Submit',
-    'OK', 'Login',
-    'Create', 'Details',
-    'Post', 'Copy',
-    'Next', 'More',
-    'Share', 'Edit'
-  ]
-} );
 
 const textureChar = DISPLAY.glCat.createTexture();
 textureChar.setZeroTexture();
 createFontSpritesheetSDF( {
   texture: textureChar,
   charSize: [ 64, 64 ],
-  font: '700 48px "Exo"',
+  font: '700 48px "Lucida Console"',
 } );
 
-const textureIcon = DISPLAY.glCat.createTexture();
-textureIcon.setZeroTexture();
-createImageSDF( {
-  texture: textureIcon,
-  url: require( '../images/pdg-icons.png' ).default
-} );
-
-export interface UIParticlesOptions {
+export interface ConsooruOptions {
   particlesSqrt: number;
   textureRandom: GLCatTexture;
   textureRandomStatic: GLCatTexture;
 }
 
-export class UIParticles {
+export class Consooru {
   private static __ppp = 2;
 
+  private __entity: Entity;
+
   public get entity(): Entity {
-    return this.__gpuParticles.entity;
+    return this.__entity;
   }
 
   private __gpuParticles: GPUParticles;
@@ -77,33 +44,98 @@ export class UIParticles {
     return this.__gpuParticles.materialRender;
   }
 
-  public constructor( options: UIParticlesOptions ) {
+  private __head: number = 0;
+  private __position: number = 0;
+  private __charCue: Array<{ code: number; mode: number }> = [];
+
+  public constructor( options: ConsooruOptions ) {
+    const { particlesSqrt } = options;
+    const particles = particlesSqrt * particlesSqrt;
+
+    this.__entity = new Entity();
+
     this.__gpuParticles = new GPUParticles( {
       materialCompute: this.__createMaterialCompute( options ),
       geometryRender: this.__createGeometryRender( options ),
       materialRender: this.__createMaterialRender( options ),
-      computeWidth: UIParticles.__ppp * options.particlesSqrt,
+      computeWidth: Consooru.__ppp * options.particlesSqrt,
       computeHeight: options.particlesSqrt,
       computeNumBuffers: 1
     } );
     this.__gpuParticles.meshRender.cull = MeshCull.None;
+    this.__entity.children.push( this.__gpuParticles.entity );
+
+    this.__entity.components.push( new Lambda( () => {
+      if ( this.__charCue.length > 0 ) {
+        const { code, mode } = this.__charCue.shift()!;
+        this.__gpuParticles.materialCompute.addUniform(
+          'newChar',
+          '4f',
+          code,
+          mode,
+          this.__position,
+          this.__head / particles
+        );
+
+        if ( code === 10 ) {
+          this.__position = 0;
+        } else {
+          this.__position ++;
+          this.__head = ( this.__head + 1 ) % particles;
+        }
+      } else {
+        this.__gpuParticles.materialCompute.addUniform( 'newChar', '4f', 0.0, 0.0, 0.0, 0.0 );
+      }
+    } ) );
+
+    this.info( 'Ready' );
   }
 
-  private __createMaterialCompute( options: UIParticlesOptions ): Material {
+  public error( text: string ): void {
+    this.push( '[ERRR] ', 1 );
+    this.push( text, 0, false );
+  }
+
+  public warn( text: string ): void {
+    this.push( '[WARN] ', 2 );
+    this.push( text, 0, false );
+  }
+
+  public info( text: string ): void {
+    this.push( '[INFO] ', 3 );
+    this.push( text, 0, false );
+  }
+
+  public verbose( text: string ): void {
+    this.push( '[VERB] ', 4 );
+    this.push( text, 0, false );
+  }
+
+  public push( text: string, mode: number = 0, linebreak = true ): void {
+    if ( linebreak ) {
+      this.__charCue.push( { code: 10, mode } );
+    }
+
+    Array.from( text ).forEach( ( char ) => {
+      this.__charCue.push( { code: char.charCodeAt( 0 ), mode } );
+    } );
+  }
+
+  private __createMaterialCompute( options: ConsooruOptions ): Material {
     const material = new Material(
       Shaders.quadVert,
-      require( '../shaders/ui-particles-compute.frag' ).default
+      require( '../shaders/consooru-compute.frag' ).default
     );
     material.addUniform( 'particlesSqrt', '1f', options.particlesSqrt );
     material.addUniform( 'particles', '1f', options.particlesSqrt * options.particlesSqrt );
-    material.addUniform( 'ppp', '1f', UIParticles.__ppp );
+    material.addUniform( 'ppp', '1f', Consooru.__ppp );
     material.addUniformTexture( 'samplerRandom', options.textureRandom );
 
     if ( module.hot ) {
-      module.hot.accept( '../shaders/ui-particles-compute.frag', () => {
+      module.hot.accept( '../shaders/consooru-compute.frag', () => {
         material.compileShaderAsync(
           Shaders.quadVert,
-          require( '../shaders/ui-particles-compute.frag' ).default
+          require( '../shaders/consooru-compute.frag' ).default
         );
       } );
     }
@@ -111,7 +143,7 @@ export class UIParticles {
     return material;
   }
 
-  private __createGeometryRender( options: UIParticlesOptions ): Geometry {
+  private __createGeometryRender( options: ConsooruOptions ): Geometry {
     const geometry = new InstancedGeometry();
 
     const bufferComputeUV = DISPLAY.glCat.createBuffer();
@@ -120,8 +152,8 @@ export class UIParticles {
       for ( let iy = 0; iy < options.particlesSqrt; iy ++ ) {
         for ( let ix = 0; ix < options.particlesSqrt; ix ++ ) {
           const i = ix + iy * options.particlesSqrt;
-          const s = ( UIParticles.__ppp * ix + 0.5 )
-            / ( UIParticles.__ppp * options.particlesSqrt );
+          const s = ( Consooru.__ppp * ix + 0.5 )
+            / ( Consooru.__ppp * options.particlesSqrt );
           const t = ( iy + 0.5 )
             / ( options.particlesSqrt );
           ret[ i * 2 + 0 ] = s;
@@ -154,34 +186,31 @@ export class UIParticles {
     return geometry;
   }
 
-  private __createMaterialRender( options: UIParticlesOptions ): Material {
+  private __createMaterialRender( options: ConsooruOptions ): Material {
     const material = new Material(
-      require( '../shaders/ui-particles-render.vert' ).default,
-      require( '../shaders/ui-particles-render.frag' ).default,
+      require( '../shaders/consooru-render.vert' ).default,
+      require( '../shaders/consooru-render.frag' ).default,
       {
         'USE_CLIP': 'true',
         'USE_VERTEX_COLOR': 'true'
       }
     );
-    material.addUniform( 'ppp', '1f', UIParticles.__ppp );
+    material.addUniform( 'ppp', '1f', Consooru.__ppp );
     material.addUniformTexture( 'samplerRandomStatic', options.textureRandomStatic );
     material.addUniformTexture( 'samplerChar', textureChar );
-    material.addUniformTexture( 'samplerWord', textureWord );
-    material.addUniformTexture( 'samplerIcon', textureIcon );
-    material.addUniformTexture( 'samplerDoublequoteRandom', textureMissing );
 
     if ( module.hot ) {
-      module.hot.accept( '../shaders/ui-particles-render.vert', () => {
+      module.hot.accept( '../shaders/consooru-render.vert', () => {
         material.compileShaderAsync(
-          require( '../shaders/ui-particles-render.vert' ).default,
-          require( '../shaders/ui-particles-render.frag' ).default
+          require( '../shaders/consooru-render.vert' ).default,
+          require( '../shaders/consooru-render.frag' ).default
         );
       } );
 
-      module.hot.accept( '../shaders/ui-particles-render.frag', () => {
+      module.hot.accept( '../shaders/consooru-render.frag', () => {
         material.compileShaderAsync(
-          require( '../shaders/ui-particles-render.vert' ).default,
-          require( '../shaders/ui-particles-render.frag' ).default
+          require( '../shaders/consooru-render.vert' ).default,
+          require( '../shaders/consooru-render.frag' ).default
         );
       } );
     }

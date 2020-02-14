@@ -1,7 +1,8 @@
 import { GL, GLCatProgram, GLCatProgramUniformType, GLCatTexture } from '@fms-cat/glcat-ts';
 import { DISPLAY } from './DISPLAY';
-import { ERRORMAN } from '../utils/ERRORMAN';
+import { EVENTMAN } from '../utils/EVENTMAN';
 import { SHADERPOOL } from './ShaderPool';
+import { matchAll } from '../utils/matchAll';
 
 export class Material {
   protected __defines: {
@@ -41,7 +42,7 @@ export class Material {
   }
 
   public get program(): GLCatProgram {
-    return SHADERPOOL.getProgram( this.vertWithDefines, this.fragWithDefines );
+    return SHADERPOOL.getProgram( this.vertWithDefines, this.fragWithDefines, this );
   }
 
   public blend: [ GLenum, GLenum ] = [ GL.ONE, GL.ZERO ];
@@ -96,34 +97,34 @@ export class Material {
 
   public async compileShaderAsync(
     vert: string,
-    frag: string,
-    disposePrevProgram = false,
-    disposePrevVertex = false,
-    disposePrevFragment = false
+    frag: string
   ): Promise<void> {
-    console.log(this.__definesString);
+    const d = performance.now();
+
     const program = await SHADERPOOL.getProgramAsync(
       this.__definesString + vert,
-      this.__definesString + frag
+      this.__definesString + frag,
+      this
     ).catch( ( e ) => {
       console.error( e );
-      ERRORMAN.emit( e );
+      EVENTMAN.emitError( e );
       // throw e;
     } );
 
     if ( !program ) { return; }
 
-    if ( disposePrevProgram ) {
-      SHADERPOOL.deleteProgram(
-        this.__definesString + this.vert,
-        this.__definesString + this.frag,
-        disposePrevVertex,
-        disposePrevFragment
-      );
-    }
+    EVENTMAN.emitInfo( `Compiled a shader in ${ ( performance.now() - d ).toFixed( 3 ) }ms` );
+
+    const regexResult = matchAll( vert + frag, /(^|\s+)([a-zA-Z][a-zA-Z0-9_]+)/gm );
+    EVENTMAN.emitWords( regexResult.map( ( r ) => r[ 2 ] ) );
+
+    const prevVert = this.__definesString + this.vert;
+    const prevFrag = this.__definesString + this.frag;
 
     this.vert = vert;
     this.frag = frag;
+
+    SHADERPOOL.discardProgram( prevVert, prevFrag, this );
   }
 
   protected get __definesString(): string {

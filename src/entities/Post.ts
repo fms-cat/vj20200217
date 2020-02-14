@@ -32,10 +32,7 @@ export class Post {
       module.hot.accept( '../shaders/post.frag', () => {
         material.compileShaderAsync(
           Shaders.quadVert,
-          require( '../shaders/post.frag' ).default,
-          true,
-          false,
-          true
+          require( '../shaders/post.frag' ).default
         );
       } );
     }

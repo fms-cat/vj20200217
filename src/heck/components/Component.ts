@@ -26,7 +26,11 @@ export interface ComponentDrawEvent {
 export class Component {
   protected __lastUpdateFrame = 0;
 
+  public active = true;
+  public visible = true;
+
   public update( event: ComponentUpdateEvent ): void {
+    if ( !this.active ) { return; }
     if ( this.__lastUpdateFrame === event.frameCount ) { return; }
     this.__lastUpdateFrame = event.frameCount;
     this.__updateImpl( event );
@@ -37,6 +41,7 @@ export class Component {
   }
 
   public draw( event: ComponentDrawEvent ): void {
+    if ( !this.visible ) { return; }
     this.__drawImpl( event );
   }
 

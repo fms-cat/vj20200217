@@ -40,6 +40,6 @@ export class EventEmittable<TEvents extends { [ type: string ]: any }> {
     ...[ type, event ]: TEvents[ TType ] extends void ? [ TType ] : [ TType, TEvents[ TType ] ]
   ): void {
     this.__eventListeners = this.__eventListeners || new Map();
-    this.__eventListeners.get( type )?.forEach( ( listener ) => listener( event ) );
+    this.__eventListeners.get( type )?.slice().forEach( ( listener ) => listener( event ) );
   }
 }

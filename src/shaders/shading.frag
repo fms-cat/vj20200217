@@ -22,6 +22,7 @@ uniform vec3 lightColor;
 uniform mat4 lightPV;
 uniform vec2 lightNearFar;
 uniform mat4 viewMatrix;
+uniform float midiCC[ 128 ];
 
 uniform sampler2D sampler0; // position.xyz, depth
 uniform sampler2D sampler1; // normal.xyz (yes, this is not good)
@@ -94,6 +95,57 @@ float calcDepth( float z ) {
   return linearstep( near, far, -b / ( -z - a ) );
 }
 
+vec3 shadePBR( Isect isect ) {
+  // ref: https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/metallic-roughness.frag
+
+  float roughness = isect.materialParams.x;
+  float metallic = isect.materialParams.y;
+  float emissive = isect.materialParams.z;
+
+  AngularInfo aI = genAngularInfo( isect );
+
+  float shadow = getShadow( isect, aI );
+  shadow = mix( 1.0, shadow, 0.8 );
+
+  float lenL = length( isect.position - lightPos );
+  float decay = 1.0 / ( lenL * lenL );
+
+  vec3 F0 = mix( DIELECTRIC_SPECULAR, isect.albedo, metallic );
+  vec3 F = F0 + ( 1.0 - F0 ) * pow( 1.0 - aI.dotVH, 5.0 );
+
+  float roughnessSq = roughness * roughness;
+  float GGXV = aI.dotNL * sqrt( aI.dotNV * aI.dotNV * ( 1.0 - roughnessSq ) + roughnessSq );
+  float GGXL = aI.dotNV * sqrt( aI.dotNL * aI.dotNL * ( 1.0 - roughnessSq ) + roughnessSq );
+  float GGX = GGXV + GGXL;
+  float Vis = ( 0.0 < GGX ) ? ( 0.5 / GGX ) : 0.0;
+
+  float f = ( aI.dotNH * roughnessSq - aI.dotNH ) * aI.dotNH + 1.0;
+  float D = roughnessSq / ( PI * f * f );
+
+  vec3 diffuse = max( vec3( 0.0 ), ( 1.0 - F ) * ( isect.albedo / PI ) );
+  vec3 spec = max( vec3( 0.0 ), F * Vis * D );
+  vec3 shade = PI * lightColor * decay * shadow * aI.dotNL * ( diffuse + spec );
+
+  vec3 color = shade;
+
+#ifdef IS_FIRST_LIGHT
+  vec3 refl = reflect( aI.V, isect.normal );
+  vec2 envCoord = vec2(
+    0.5 + atan( refl.z, refl.x ) / TAU,
+    0.5 + atan( refl.y, length( refl.zx ) ) / PI
+  );
+  vec2 brdf = texture2D( samplerBRDFLUT, vec2( aI.dotNV, 1.0 - roughness ) ).xy;
+
+  vec3 texEnv = 0.2 * pow( texture2D( samplerEnv, envCoord ).rgb, vec3( 2.2 ) );
+  color += PI * texEnv * ( brdf.x * F0 + brdf.y );
+
+  color += emissive * aI.dotNV * isect.albedo;
+#endif // IS_FIRST_LIGHT
+
+  return color;
+
+}
+
 void main() {
   vec4 tex0 = texture2D( sampler0, vUv );
   vec4 tex1 = texture2D( sampler1, vUv );
@@ -106,72 +158,32 @@ void main() {
   isect.normal = tex1.xyz;
   isect.albedo = tex2.rgb;
   isect.materialId = int( tex3.w + 0.5 );
+  isect.materialParams = tex3.xyz;
 
-  gl_FragColor = vec4( 0.0 );
-// #ifdef IS_FIRST_LIGHT
-  // gl_FragColor = vec4( 0.5 + 0.5 * isect.normal, 1.0 );
-  // gl_FragColor = vec4( vec3( calcDepth( tex0.w ) ), 1.0 );
-// #endif
-  // return;
+  vec3 color = vec3( 0.0 );
 
   if ( isect.materialId == MTL_NONE ) {
     // do nothing
 
   } else if ( isect.materialId == MTL_UNLIT ) {
 #ifdef IS_FIRST_LIGHT
-    gl_FragColor = vec4( isect.albedo, 1.0 );
+    color = isect.albedo;
 #endif
 
   } else if ( isect.materialId == MTL_PBR ) {
-    // ref: https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/metallic-roughness.frag
-
-    float roughness = tex3.x;
-    float metallic = tex3.y;
-    float emissive = tex3.z;
-
-    AngularInfo aI = genAngularInfo( isect );
-
-    float shadow = getShadow( isect, aI );
-    shadow = mix( 1.0, shadow, 0.8 );
-
-    float lenL = length( isect.position - lightPos );
-    float decay = 1.0 / ( lenL * lenL );
-
-    vec3 F0 = mix( DIELECTRIC_SPECULAR, isect.albedo, metallic );
-    vec3 F = F0 + ( 1.0 - F0 ) * pow( 1.0 - aI.dotVH, 5.0 );
-
-    float roughnessSq = roughness * roughness;
-    float GGXV = aI.dotNL * sqrt( aI.dotNV * aI.dotNV * ( 1.0 - roughnessSq ) + roughnessSq );
-    float GGXL = aI.dotNV * sqrt( aI.dotNL * aI.dotNL * ( 1.0 - roughnessSq ) + roughnessSq );
-    float GGX = GGXV + GGXL;
-    float Vis = ( 0.0 < GGX ) ? ( 0.5 / GGX ) : 0.0;
-
-    float f = ( aI.dotNH * roughnessSq - aI.dotNH ) * aI.dotNH + 1.0;
-    float D = roughnessSq / ( PI * f * f );
-
-    vec3 diffuse = max( vec3( 0.0 ), ( 1.0 - F ) * ( isect.albedo / PI ) );
-    vec3 spec = max( vec3( 0.0 ), F * Vis * D );
-    vec3 shade = PI * lightColor * decay * shadow * aI.dotNL * ( diffuse + spec );
-
-    vec3 color = shade;
-
-#ifdef IS_FIRST_LIGHT
-    vec3 refl = reflect( aI.V, isect.normal );
-    vec2 envCoord = vec2(
-      0.5 + atan( refl.z, refl.x ) / TAU,
-      0.5 + atan( refl.y, length( refl.zx ) ) / PI
-    );
-    vec2 brdf = texture2D( samplerBRDFLUT, vec2( aI.dotNV, 1.0 - roughness ) ).xy;
-
-    vec3 texEnv = 0.2 * pow( texture2D( samplerEnv, envCoord ).rgb, vec3( 2.2 ) );
-    color += PI * texEnv * ( brdf.x * F0 + brdf.y );
-
-    color += emissive * aI.dotNV * isect.albedo;
-#endif // IS_FIRST_LIGHT
-
-    gl_FragColor = vec4( color, 1.0 );
+    color = shadePBR( isect );
 
   }
 
+  vec3 xfdA = color;
+  vec3 xfdB = vec3( 0.0 );
+
+#ifdef IS_FIRST_LIGHT
+  xfdB = 0.5 + 0.5 * isect.normal;
+  xfdB = vec3( calcDepth( tex0.w ) );
+#endif
+
+  gl_FragColor.xyz = mix( xfdA, xfdB, midiCC[ 77 ] );
+  gl_FragColor.w = 1.0;
   gl_FragColor.xyz *= smoothstep( 1.0, 0.7, calcDepth( tex0.w ) );
 }

@@ -4,6 +4,9 @@ export class EventManager extends EventEmittable<{
   error: any;
   info: string;
   words: string[];
+  panic: void;
+  regenerate: void;
+  applyShaders: void;
 }> {
   public emitError( e: any ): void {
     this.__emit( 'error', e );
@@ -15,6 +18,18 @@ export class EventManager extends EventEmittable<{
 
   public emitWords( e: string[] ): void {
     this.__emit( 'words', e );
+  }
+
+  public emitPanic(): void {
+    this.__emit( 'panic' );
+  }
+
+  public emitRegenerate(): void {
+    this.__emit( 'regenerate' );
+  }
+
+  public emitApplyShaders(): void {
+    this.__emit( 'applyShaders' );
   }
 }
 

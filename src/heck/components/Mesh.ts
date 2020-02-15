@@ -2,6 +2,7 @@ import { Component, ComponentDrawEvent } from './Component';
 import { DISPLAY } from '../DISPLAY';
 import { GL } from '@fms-cat/glcat-ts';
 import { Geometry } from '../Geometry';
+import { MIDIMAN } from '../../utils/MidiManager';
 import { Material } from '../Material';
 
 export enum MeshCull {
@@ -63,6 +64,7 @@ export class Mesh extends Component {
     program.uniform1f( 'time', event.time );
     program.uniform1f( 'frameCount', event.frameCount );
     program.uniform2f( 'resolution', event.renderTarget.width, event.renderTarget.height );
+    program.uniform1fv( 'midiCC', MIDIMAN.ccValues );
 
     program.uniformMatrix4fv( 'normalMatrix', event.globalTransform.matrix.inverse!.transpose.elements );
     program.uniformMatrix4fv( 'modelMatrix', event.globalTransform.matrix.elements );

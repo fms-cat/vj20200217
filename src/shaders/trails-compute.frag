@@ -34,6 +34,8 @@ uniform float noisePhase;
 // uniform float velScale;
 // uniform float genRate;
 
+uniform float midiCC[ 128 ];
+
 // ------
 
 vec2 uvInvT( vec2 _uv ) {
@@ -174,7 +176,7 @@ void main() {
   vel += dt * 20.0 * ( SPHERE_RADIUS - length( posFromSphereCenter ) ) * normalize( posFromSphereCenter );
 
   // noise field
-  vel += 40.0 * vec3(
+  vel += midiCC[ 13 ] * 100.0 * vec3(
     noise( vec4( 0.7 * pos.xyz, 1.485 + sin( time * 0.1 ) + noisePhase ) ),
     noise( vec4( 0.7 * pos.xyz, 3.485 + sin( time * 0.1 ) + noisePhase ) ),
     noise( vec4( 0.7 * pos.xyz, 5.485 + sin( time * 0.1 ) + noisePhase ) )

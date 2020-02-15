@@ -1,5 +1,6 @@
 import { GL, GLCatTexture } from '@fms-cat/glcat-ts';
 import { DISPLAY } from '../heck/DISPLAY';
+import { EVENTMAN } from '../utils/EventManager';
 import { Entity } from '../heck/Entity';
 import { GPUParticles } from './GPUParticles';
 import { Geometry } from '../heck/Geometry';
@@ -13,11 +14,16 @@ import { createFontSpritesheetSDF } from '../utils/createFontSpritesheetSDF';
 
 const textureChar = DISPLAY.glCat.createTexture();
 textureChar.setZeroTexture();
-createFontSpritesheetSDF( {
-  texture: textureChar,
-  charSize: [ 64, 64 ],
-  font: '700 48px "Lucida Console"',
-} );
+
+async function prepareTextures(): Promise<void> {
+  createFontSpritesheetSDF( {
+    texture: textureChar,
+    charSize: [ 64, 64 ],
+    font: '700 48px "Wt-Position-Mono"',
+  } );
+}
+prepareTextures();
+EVENTMAN.on( 'regenerate', () => prepareTextures() );
 
 export interface ConsooruOptions {
   particlesSqrt: number;

@@ -29,7 +29,7 @@ export async function createFontSpritesheetSDF( options: {
   context.textAlign = 'center';
   context.fillStyle = '#fff';
 
-  await ( document as any ).fonts.load( font );
+  await document.fonts.load( font );
   context.font = font;
 
   for ( let i = 0; i < 256; i ++ ) {

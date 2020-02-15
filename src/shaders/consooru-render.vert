@@ -110,6 +110,7 @@ void main() {
   vec2 size;
 
   size = vec2( 0.4 );
+  size *= 1.0 - exp( -20.0 * vLifetime );
 
   vPosition.xy += p * size;
 

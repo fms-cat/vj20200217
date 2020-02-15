@@ -25,11 +25,15 @@ export interface EntityDrawEvent {
 export class Entity {
   public readonly transform = new Transform();
 
-  public children: Entity[] = [];
+  public active = true;
+  public visible = true;
 
+  public children: Entity[] = [];
   public components: Component[] = [];
 
   public update( event: EntityUpdateEvent ): void {
+    if ( !this.active ) { return; }
+
     const globalTransform = event.globalTransform.multiply( this.transform );
 
     this.components.forEach( ( component ) => {
@@ -54,6 +58,8 @@ export class Entity {
   }
 
   public draw( event: EntityDrawEvent ): void {
+    if ( !this.visible ) { return; }
+
     const globalTransform = event.globalTransform.multiply( this.transform );
 
     this.components.forEach( ( component ) => {

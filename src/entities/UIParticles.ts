@@ -1,5 +1,6 @@
 import { GL, GLCatTexture } from '@fms-cat/glcat-ts';
 import { DISPLAY } from '../heck/DISPLAY';
+import { EVENTMAN } from '../utils/EventManager';
 import { Entity } from '../heck/Entity';
 import { GPUParticles } from './GPUParticles';
 import { Geometry } from '../heck/Geometry';
@@ -14,45 +15,53 @@ import { loadImageTexture } from '../utils/loadImageTexture';
 
 const textureMissing = DISPLAY.glCat.createTexture();
 textureMissing.setZeroTexture();
-loadImageTexture( {
-  texture: textureMissing,
-  url: require( '../images/missing.png' ).default
-} );
 
 const textureWord = DISPLAY.glCat.createTexture();
 textureWord.setZeroTexture();
-createFontSpritesheetSDF( {
-  texture: textureWord,
-  charSize: [ 256, 64 ],
-  matrix: [ 2, 8 ],
-  baseline: 0.75,
-  font: '40px "Roboto"',
-  chars: [
-    'Button', 'Button',
-    'Confirm', 'Cancel',
-    'Upload', 'Submit',
-    'OK', 'Login',
-    'Create', 'Details',
-    'Post', 'Copy',
-    'Next', 'More',
-    'Share', 'Edit'
-  ]
-} );
 
 const textureChar = DISPLAY.glCat.createTexture();
 textureChar.setZeroTexture();
-createFontSpritesheetSDF( {
-  texture: textureChar,
-  charSize: [ 64, 64 ],
-  font: '700 48px "Exo"',
-} );
 
 const textureIcon = DISPLAY.glCat.createTexture();
 textureIcon.setZeroTexture();
-createImageSDF( {
-  texture: textureIcon,
-  url: require( '../images/pdg-icons.png' ).default
-} );
+
+async function prepareTextures(): Promise<void> {
+  await loadImageTexture( {
+    texture: textureMissing,
+    url: require( '../images/missing.png' ).default
+  } );
+
+  await createFontSpritesheetSDF( {
+    texture: textureWord,
+    charSize: [ 256, 64 ],
+    matrix: [ 2, 8 ],
+    baseline: 0.75,
+    font: '40px "Roboto"',
+    chars: [
+      'Button', 'Button',
+      'Confirm', 'Cancel',
+      'Upload', 'Submit',
+      'OK', 'Login',
+      'Create', 'Details',
+      'Post', 'Copy',
+      'Next', 'More',
+      'Share', 'Edit'
+    ]
+  } );
+
+  await createFontSpritesheetSDF( {
+    texture: textureChar,
+    charSize: [ 64, 64 ],
+    font: '700 48px "Exo"',
+  } );
+
+  await createImageSDF( {
+    texture: textureIcon,
+    url: require( '../images/pdg-icons.png' ).default
+  } );
+}
+prepareTextures();
+EVENTMAN.on( 'regenerate', () => prepareTextures() );
 
 export interface UIParticlesOptions {
   particlesSqrt: number;

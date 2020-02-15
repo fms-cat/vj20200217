@@ -11,12 +11,13 @@ import { CanvasRenderTarget } from './heck/CanvasRenderTarget';
 import { Consooru } from './entities/Consooru';
 import { DISPLAY } from './heck/DISPLAY';
 import { Dog } from './heck/Dog';
-import { EVENTMAN } from './utils/EVENTMAN';
+import { EVENTMAN } from './utils/EventManager';
 import { Entity } from './heck/Entity';
 import { ErrorLayer } from './entities/ErrorLayer';
 import { HotPlane } from './entities/HotPlane';
 import { Lambda } from './heck/components/Lambda';
 import { LightEntity } from './entities/LightEntity';
+import { MIDIMAN } from './utils/MidiManager';
 import { Post } from './entities/Post';
 import RandomTexture from './utils/RandomTexture';
 import { Trails } from './entities/Trails';
@@ -99,6 +100,9 @@ EVENTMAN.on( 'error', () => {
 } );
 EVENTMAN.on( 'info', ( text ) => {
   consooru.info( text );
+} );
+EVENTMAN.on( 'regenerate', () => {
+  consooru.info( 'Regenerating textures...' );
 } );
 
 const hotPlane = new HotPlane();
@@ -188,6 +192,29 @@ const post = new Post( {
   target: canvasRenderTarget
 } );
 dog.root.children.push( post.entity );
+
+// == midi =========================================================================================
+MIDIMAN.midi( 'applyShaders' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'applyShaders' && 0.5 < event.value ) {
+    EVENTMAN.emitApplyShaders();
+  }
+} );
+
+MIDIMAN.midi( 'changeBigWords' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'changeBigWords' && 0.5 < event.value ) {
+    bigWords.draw();
+  }
+} );
+
+MIDIMAN.midi( 'toggleBigWords' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'toggleBigWords' && 0.5 < event.value ) {
+    bigWords.entity.active = !bigWords.entity.active;
+    bigWords.entity.visible = !bigWords.entity.visible;
+  }
+} );
 
 // == keyboard is good =============================================================================
 const checkboxActive = $<HTMLInputElement>( '#active' )!;

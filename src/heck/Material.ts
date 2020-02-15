@@ -1,6 +1,6 @@
 import { GL, GLCatProgram, GLCatProgramUniformType, GLCatTexture } from '@fms-cat/glcat-ts';
 import { DISPLAY } from './DISPLAY';
-import { EVENTMAN } from '../utils/EVENTMAN';
+import { EVENTMAN } from '../utils/EventManager';
 import { SHADERPOOL } from './ShaderPool';
 import { matchAll } from '../utils/matchAll';
 
@@ -115,16 +115,23 @@ export class Material {
 
     EVENTMAN.emitInfo( `Compiled a shader in ${ ( performance.now() - d ).toFixed( 3 ) }ms` );
 
-    const regexResult = matchAll( vert + frag, /(^|\s+)([a-zA-Z][a-zA-Z0-9_]+)/gm );
-    EVENTMAN.emitWords( regexResult.map( ( r ) => r[ 2 ] ) );
+    const fn = (): void => {
+      EVENTMAN.off( 'applyShaders', fn );
 
-    const prevVert = this.__definesString + this.vert;
-    const prevFrag = this.__definesString + this.frag;
+      const regexResult = matchAll( vert + frag, /(^|\s+)([a-zA-Z][a-zA-Z0-9_]+)/gm );
+      EVENTMAN.emitWords( regexResult.map( ( r ) => r[ 2 ] ) );
 
-    this.vert = vert;
-    this.frag = frag;
+      const prevVert = this.__definesString + this.vert;
+      const prevFrag = this.__definesString + this.frag;
 
-    SHADERPOOL.discardProgram( prevVert, prevFrag, this );
+      this.vert = vert;
+      this.frag = frag;
+
+      SHADERPOOL.discardProgram( prevVert, prevFrag, this );
+
+      EVENTMAN.emitInfo( 'Applied a shader' );
+    };
+    EVENTMAN.on( 'applyShaders', fn );
   }
 
   protected get __definesString(): string {

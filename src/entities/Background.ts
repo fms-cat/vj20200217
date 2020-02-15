@@ -3,7 +3,6 @@ import { Quaternion, Vector3 } from '@fms-cat/experimental';
 import { Entity } from '../heck/Entity';
 import { Lambda } from '../heck/components/Lambda';
 import { Material } from '../heck/Material';
-import { Shaders } from '../shaders';
 import { genOctahedron } from '../geometries/genOctahedron';
 
 export class Background {
@@ -19,14 +18,21 @@ export class Background {
     const geometry = genOctahedron( { div: 6, radius: -10.0 } );
 
     const material = new Material(
-      Shaders.objectVert,
+      require( '../shaders/background.vert' ).default,
       require( '../shaders/background.frag' ).default
     );
 
     if ( module.hot ) {
+      module.hot.accept( '../shaders/background.vert', () => {
+        material.compileShaderAsync(
+          require( '../shaders/background.vert' ).default,
+          require( '../shaders/background.frag' ).default
+        );
+      } );
+
       module.hot.accept( '../shaders/background.frag', () => {
         material.compileShaderAsync(
-          Shaders.objectVert,
+          require( '../shaders/background.vert' ).default,
           require( '../shaders/background.frag' ).default
         );
       } );

@@ -2,6 +2,7 @@ import { Component, ComponentUpdateEvent } from './Component';
 import { DISPLAY } from '../DISPLAY';
 import { GL } from '@fms-cat/glcat-ts';
 import { Geometry } from '../Geometry';
+import { MIDIMAN } from '../../utils/MidiManager';
 import { Material } from '../Material';
 import { RenderTarget } from '../RenderTarget';
 import { TRIANGLE_STRIP_QUAD } from '@fms-cat/experimental';
@@ -64,6 +65,7 @@ export class Quad extends Component {
     program.uniform1f( 'time', event.time );
     program.uniform1f( 'deltaTime', event.deltaTime );
     program.uniform1f( 'frameCount', event.frameCount );
+    program.uniform1fv( 'midiCC', MIDIMAN.ccValues );
     program.uniform2f( 'resolution', this.target.width, this.target.height );
     program.uniform4f( 'range', ...this.range );
 

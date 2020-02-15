@@ -1,12 +1,12 @@
-@import url( 'https://fonts.googleapis.com/css?family=Exo&display=swap' );
-@import url( 'https://fonts.googleapis.com/css?family=Roboto&display=swap' );
+@import url( 'https://fonts.googleapis.com/css?family=Exo' );
+@import url( 'https://fonts.googleapis.com/css?family=Roboto' );
 
 body {
   width: 100%;
   height: 100%;
   overflow: hidden;
 
-  font: 500 10px 'Wt-Position', sans-serif;
+  font: 500 10px Exo, 'Wt-Position', sans-serif;
   text-shadow: 0 0 2px #000, 0 0 2px #000, 0 0 2px #000;
 
   background: #000;
@@ -16,6 +16,12 @@ body {
     position: fixed;
     left: 8px;
     top: 8px;
+  }
+
+  #divMidi {
+    position: fixed;
+    left: 8px;
+    bottom: 8px;
   }
 
   #canvas {

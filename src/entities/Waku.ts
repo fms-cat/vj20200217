@@ -1,8 +1,8 @@
 import { Entity } from '../heck/Entity';
+import { Material } from '../heck/Material';
 import { Plane } from './Plane';
 import { Shaders } from '../shaders';
 import { Vector3 } from '@fms-cat/experimental';
-import { Material } from '../heck/Material';
 
 export class Waku {
   private __entity: Entity;

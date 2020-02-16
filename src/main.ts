@@ -1,6 +1,6 @@
 // == import various modules / stuff ===============================================================
 import './styles/main.scss';
-import { ClockRealtime, Swap, Vector3, ExpSmooth } from '@fms-cat/experimental';
+import { ClockRealtime, ExpSmooth, Swap, Vector3 } from '@fms-cat/experimental';
 import { Background } from './entities/Background';
 import { BigWords } from './entities/BigWords';
 import { Bloom } from './entities/Bloom';
@@ -22,12 +22,12 @@ import { MIDIMAN } from './utils/MidiManager';
 import { Material } from './heck/Material';
 import { Post } from './entities/Post';
 import { RandomTexture } from './utils/RandomTexture';
+import { Raymarcher } from './entities/Raymarcher';
 import { ScreenCaptureTexture } from './utils/ScreenCaptureTexture';
 import { SphereParticles } from './entities/SphereParticles';
 import { Trails } from './entities/Trails';
 import { UIParticles } from './entities/UIParticles';
 import { Waku } from './entities/Waku';
-import { Raymarcher } from './entities/Raymarcher';
 
 // == we are still struggling by this ==============================================================
 function $<T extends Element>( selector: string ): T | null {
@@ -69,7 +69,7 @@ dog.clock.play();
 const canvasRenderTarget = new CanvasRenderTarget();
 
 // Mr. Update Everything
-dog.root.components.push( new Lambda( ( event ) => {
+dog.root.components.push( new Lambda( () => {
   randomTexture.update();
   captureTexture.update();
 } ) );

@@ -1,11 +1,11 @@
 import { BufferRenderTarget } from '../heck/BufferRenderTarget';
 import { Entity } from '../heck/Entity';
+import { Lambda } from '../heck/components/Lambda';
 import { Material } from '../heck/Material';
 import { PerspectiveCamera } from '../heck/components/PerspectiveCamera';
 import { Quad } from '../heck/components/Quad';
 import { Shaders } from '../shaders';
 import { Swap } from '@fms-cat/experimental';
-import { Lambda } from '../heck/components/Lambda';
 
 export interface LightEntityOptions {
   root: Entity;

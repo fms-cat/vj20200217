@@ -4,14 +4,14 @@ export class ScreenCaptureTexture {
   private __video: HTMLVideoElement;
   private __texture: GLCatTexture;
 
-  constructor( glCat: GLCat ) {
+  public constructor( glCat: GLCat ) {
     this.__video = document.createElement( 'video' );
     this.__texture = glCat.createTexture()!;
     this.__texture.setTextureFromArray( 1, 1, new Uint8Array( [ 255, 0, 255, 255 ] ) ); // heck
   }
 
-  public get video() { return this.__video; }
-  public get texture() { return this.__texture; }
+  public get video(): HTMLVideoElement { return this.__video; }
+  public get texture(): GLCatTexture { return this.__texture; }
 
   public setup( width: number, height: number ): Promise<GLCatTexture> {
     return ( navigator.mediaDevices as any ).getDisplayMedia(
@@ -27,7 +27,7 @@ export class ScreenCaptureTexture {
     } );
   }
 
-  public update() {
+  public update(): void {
     if ( !this.__video.paused ) {
       this.__texture.setTexture( this.__video );
     }

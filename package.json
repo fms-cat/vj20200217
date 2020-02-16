@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack-dev-server --hot --mode development",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "build-dev": "webpack --mode development",
     "build-prod": "webpack --mode production",
     "build": "yarn build-dev && yarn build-prod"

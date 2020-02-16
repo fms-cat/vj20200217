@@ -1,6 +1,6 @@
 // == import various modules / stuff ===============================================================
 import './styles/main.scss';
-import { ClockRealtime, Swap, Vector3 } from '@fms-cat/experimental';
+import { ClockRealtime, Swap, Vector3, ExpSmooth } from '@fms-cat/experimental';
 import { Background } from './entities/Background';
 import { BigWords } from './entities/BigWords';
 import { Bloom } from './entities/Bloom';
@@ -14,15 +14,20 @@ import { Dog } from './heck/Dog';
 import { EVENTMAN } from './utils/EventManager';
 import { Entity } from './heck/Entity';
 import { ErrorLayer } from './entities/ErrorLayer';
+import { Glitch } from './entities/Glitch';
 import { HotPlane } from './entities/HotPlane';
 import { Lambda } from './heck/components/Lambda';
 import { LightEntity } from './entities/LightEntity';
 import { MIDIMAN } from './utils/MidiManager';
+import { Material } from './heck/Material';
 import { Post } from './entities/Post';
-import RandomTexture from './utils/RandomTexture';
+import { RandomTexture } from './utils/RandomTexture';
+import { ScreenCaptureTexture } from './utils/ScreenCaptureTexture';
+import { SphereParticles } from './entities/SphereParticles';
 import { Trails } from './entities/Trails';
 import { UIParticles } from './entities/UIParticles';
 import { Waku } from './entities/Waku';
+import { Raymarcher } from './entities/Raymarcher';
 
 // == we are still struggling by this ==============================================================
 function $<T extends Element>( selector: string ): T | null {
@@ -44,6 +49,16 @@ const randomTextureStatic = new RandomTexture(
 );
 randomTextureStatic.update();
 
+const captureTexture = new ScreenCaptureTexture(
+  DISPLAY.glCat
+);
+// captureTexture.texture.textureFilter( GL.NEAREST );
+captureTexture.setup( CONFIG.screenReso[ 0 ], CONFIG.screenReso[ 1 ] );
+
+// == Sir Glitchael Oneshotson =====================================================================
+const sirGlitch = new ExpSmooth();
+sirGlitch.factor = 10.0;
+
 // == scene ========================================================================================
 const dog = new Dog( {
   clock: new ClockRealtime(),
@@ -53,11 +68,11 @@ dog.clock.play();
 
 const canvasRenderTarget = new CanvasRenderTarget();
 
-const entityRandomTextureUpdater = new Entity();
-entityRandomTextureUpdater.components.push( new Lambda( () => {
+// Mr. Update Everything
+dog.root.components.push( new Lambda( ( event ) => {
   randomTexture.update();
+  captureTexture.update();
 } ) );
-dog.root.children.push( entityRandomTextureUpdater );
 
 // -- "objects" ------------------------------------------------------------------------------------
 const waku = new Waku();
@@ -65,8 +80,6 @@ dog.root.children.push( waku.entity );
 
 const errorLayer = new ErrorLayer();
 dog.root.children.push( errorLayer.entity );
-errorLayer.entity.transform.position = new Vector3( [ 0.0, 0.0, 1.0 ] );
-errorLayer.entity.transform.scale = new Vector3( [ 2.0, 1.0, 1.0 ] );
 EVENTMAN.on( 'error', ( e ) => {
   errorLayer.setText( e );
 } );
@@ -82,8 +95,15 @@ const trails = new Trails( {
 } );
 dog.root.children.push( trails.entity );
 
+const sphereParticles = new SphereParticles( {
+  particlesSqrt: 256,
+  textureRandom: randomTexture.texture,
+  textureRandomStatic: randomTextureStatic.texture
+} );
+dog.root.children.push( sphereParticles.entity );
+
 const uiParticles = new UIParticles( {
-  particlesSqrt: 8,
+  particlesSqrt: 16,
   textureRandom: randomTexture.texture,
   textureRandomStatic: randomTextureStatic.texture
 } );
@@ -102,16 +122,22 @@ EVENTMAN.on( 'info', ( text ) => {
   consooru.info( text );
 } );
 EVENTMAN.on( 'regenerate', () => {
-  consooru.info( 'Regenerating textures...' );
+  consooru.info( 'Regenerate textures' );
 } );
+consooru.info( 'Ready' );
+consooru.info( `Resolution: ${ CONFIG.resolution[ 0 ] }x${ CONFIG.resolution[ 1 ] }` );
 
 const hotPlane = new HotPlane();
 hotPlane.material.addUniformTexture( 'samplerRandom', randomTexture.texture );
 hotPlane.material.addUniformTexture( 'samplerRandomStatic', randomTextureStatic.texture );
+hotPlane.material.addUniformTexture( 'samplerCapture', captureTexture.texture );
 dog.root.children.push( hotPlane.entity );
 
 const background = new Background();
 dog.root.children.push( background.entity );
+
+const raymarcher = new Raymarcher();
+dog.root.children.push( raymarcher.entity );
 
 // -- things that is not an "object" ---------------------------------------------------------------
 const swapOptions = {
@@ -126,47 +152,52 @@ const swap = new Swap(
 
 const light = new LightEntity( {
   root: dog.root,
-  shadowMapFov: 40.0,
+  shadowMapFov: 90.0,
   shadowMapNear: 1.0,
-  shadowMapFar: 40.0
+  shadowMapFar: 20.0
 } );
-light.color = [ 30.0, 40.0, 50.0 ];
-light.entity.transform.lookAt( new Vector3( [ 2.0, -4.0, 6.0 ] ) );
+light.color = [ 50.0, 50.0, 50.0 ];
+light.entity.transform.lookAt( new Vector3( [ -1.0, 2.0, 6.0 ] ) );
 dog.root.children.push( light.entity );
 
-const light2 = new LightEntity( {
-  root: dog.root,
-  shadowMapFov: 40.0,
-  shadowMapNear: 1.0,
-  shadowMapFar: 40.0
-} );
-light2.color = [ 50.0, 30.0, 40.0 ];
-light2.entity.transform.lookAt( new Vector3( [ -4.0, 2.0, 6.0 ] ) );
-dog.root.children.push( light2.entity );
+// const light2 = new LightEntity( {
+//   root: dog.root,
+//   shadowMapFov: 90.0,
+//   shadowMapNear: 1.0,
+//   shadowMapFar: 20.0
+// } );
+// light2.color = [ 50.0, 30.0, 40.0 ];
+// light2.entity.transform.lookAt( new Vector3( [ -4.0, -2.0, 6.0 ] ) );
+// dog.root.children.push( light2.entity );
 
 const camera = new CameraEntity( {
   root: dog.root,
   target: swap.o,
   lights: [
     light,
-    light2
-  ]
+    // light2
+  ],
+  textureRandom: randomTexture.texture
 } );
-camera.entity.transform.lookAt( new Vector3( [ 0.0, 0.0, 5.0 ] ) );
 camera.camera.clear = [ 0.0, 0.0, 0.0, 0.0 ];
 camera.entity.components.push( new Lambda( ( event ) => {
-  const t1 = 0.02 * Math.sin( event.time );
+  const t1 = 0.02 * Math.sin( event.time ) + MIDIMAN.midi( 'cameraRotX' ) - 0.5;
   const s1 = Math.sin( t1 );
   const c1 = Math.cos( t1 );
-  const t2 = 0.02 * Math.cos( event.time );
+  const t2 = 0.02 * Math.cos( event.time ) + MIDIMAN.midi( 'cameraRotY' ) - 0.5;
   const s2 = Math.sin( t2 );
   const c2 = Math.cos( t2 );
+  const r = 9.0 * MIDIMAN.midi( 'cameraRadius' );
+
   camera.entity.transform.lookAt( new Vector3( [
-    5.0 * c1 * s2,
-    5.0 * s1,
-    5.0 * c1 * c2
+    r * c1 * s2,
+    r * s1,
+    r * c1 * c2
   ] ) );
 } ) );
+MIDIMAN.setSmoothFactor( 'cameraRotX', 10.0 );
+MIDIMAN.setSmoothFactor( 'cameraRotY', 10.0 );
+MIDIMAN.setSmoothFactor( 'cameraRadius', 10.0 );
 dog.root.children.push( camera.entity );
 
 const bigWords = new BigWords( {
@@ -187,6 +218,17 @@ const bloom = new Bloom( {
 dog.root.children.push( bloom.entity );
 
 swap.swap();
+const glitch = new Glitch( {
+  input: swap.i.texture,
+  target: swap.o
+} );
+glitch.entity.components.unshift( new Lambda( ( event ) => {
+  sirGlitch.update( event.deltaTime );
+  glitch.material.addUniform( 'sirGlitch', '1f', sirGlitch.value );
+} ) );
+dog.root.children.push( glitch.entity );
+
+swap.swap();
 const post = new Post( {
   input: swap.i.texture,
   target: canvasRenderTarget
@@ -194,10 +236,21 @@ const post = new Post( {
 dog.root.children.push( post.entity );
 
 // == midi =========================================================================================
+dog.root.components.push( new Lambda( ( event ) => {
+  MIDIMAN.update( event.deltaTime );
+} ) );
+
+MIDIMAN.midi( 'oneshotGlitch' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'oneshotGlitch' && 0.5 < event.value ) {
+    sirGlitch.value = 1.0;
+  }
+} );
+
 MIDIMAN.midi( 'applyShaders' );
 MIDIMAN.on( 'paramChange', ( event ) => {
   if ( event.key === 'applyShaders' && 0.5 < event.value ) {
-    EVENTMAN.emitApplyShaders();
+    Material.applyCuePrograms();
   }
 } );
 
@@ -216,16 +269,39 @@ MIDIMAN.on( 'paramChange', ( event ) => {
   }
 } );
 
+MIDIMAN.midi( 'resetTime' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'resetTime' && 0.5 < event.value ) {
+    dog.clock.setTime( 0 );
+    consooru.info( 'Reset global time' );
+  }
+} );
+
+MIDIMAN.midi( 'regenerate' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'regenerate' && 0.5 < event.value ) {
+    EVENTMAN.emitRegenerate();
+  }
+} );
+
+MIDIMAN.midi( 'toggleUI' );
+MIDIMAN.on( 'paramChange', ( event ) => {
+  if ( event.key === 'toggleUI' && 0.5 < event.value ) {
+    const divUI = $<HTMLDivElement>( '#divUI' )!;
+    divUI.style.display = divUI.style.display === 'block' ? 'none' : 'block';
+  }
+} );
+
 // == keyboard is good =============================================================================
 const checkboxActive = $<HTMLInputElement>( '#active' )!;
 
 window.addEventListener( 'keydown', ( event ) => {
   if ( event.which === 27 ) { // panic button
-    dog.active = false;
+    dog.root.active = false;
     checkboxActive.checked = false;
   }
 } );
 
 checkboxActive.addEventListener( 'input', ( event: any ) => {
-  dog.active = event.target.checked;
+  dog.root.active = event.target.checked;
 } );

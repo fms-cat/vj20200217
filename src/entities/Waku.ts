@@ -22,7 +22,7 @@ export class Waku {
     const planeTop = new Plane( { material: materialTop } );
     planeTop.material.addUniform( 'uvScale', '2f', 2.5, 0.05 );
     planeTop.entity.transform.scale = new Vector3( [ 2.5, 0.05, 1.0 ] );
-    planeTop.entity.transform.position = new Vector3( [ 0.0, 1.5, 0.5 ] );
+    planeTop.entity.transform.position = new Vector3( [ 0.0, 1.5, 1.0 ] );
     this.__entity.children.push( planeTop.entity );
 
     const materialBotttom = new Material(
@@ -33,17 +33,17 @@ export class Waku {
     const planeBottom = new Plane( { material: materialBotttom } );
     planeBottom.material.addUniform( 'uvScale', '2f', -2.5, -0.05 );
     planeBottom.entity.transform.scale = new Vector3( [ 2.5, 0.05, 1.0 ] );
-    planeBottom.entity.transform.position = new Vector3( [ 0.0, -1.5, 0.5 ] );
+    planeBottom.entity.transform.position = new Vector3( [ 0.0, -1.5, 1.0 ] );
     this.__entity.children.push( planeBottom.entity );
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/waku.frag', () => {
-        materialTop.compileShaderAsync(
+        materialTop.cueShader(
           Shaders.objectVert,
           require( '../shaders/waku.frag' ).default
         );
 
-        materialBotttom.compileShaderAsync(
+        materialBotttom.cueShader(
           Shaders.objectVert,
           require( '../shaders/waku.frag' ).default
         );

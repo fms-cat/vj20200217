@@ -1,4 +1,6 @@
 #define BARREL_ITER 10
+#define BARREL_OFFSET ( 0.1 * midiCC[ 49 ] )
+#define BARREL_AMP ( 0.2 * midiCC[ 49 ] )
 
 #define HUGE 9E16
 #define PI 3.14159265
@@ -16,10 +18,9 @@ uniform float time;
 uniform float errorTime;
 uniform vec2 resolution;
 
-uniform float barrelAmp;
-uniform float barrelOffset;
-
 uniform sampler2D sampler0;
+
+uniform float midiCC[ 128 ];
 
 // ------
 
@@ -50,7 +51,7 @@ void main() {
       1.0 - 3.0 * abs( 1.0 / 2.0 - fi ),
       1.0 - 3.0 * abs( 5.0 / 6.0 - fi )
     ) ) / float( BARREL_ITER ) * 4.0;
-    tex += a * barrel( barrelOffset + barrelAmp * fi, uv );
+    tex += a * barrel( BARREL_OFFSET + BARREL_AMP * fi, uv );
   }
 
   tex = mix( vec3( 0.0 ), tex, vig );

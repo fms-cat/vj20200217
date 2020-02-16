@@ -1,6 +1,6 @@
+import { lerp, saturate } from '@fms-cat/experimental';
 import { EVENTMAN } from './EventManager';
 import { EventEmittable } from './EventEmittable';
-import { lerp } from '@fms-cat/experimental';
 
 interface MidiManagerStorage {
   values: { [ key: string ]: number };
@@ -68,7 +68,11 @@ export class MidiManager extends EventEmittable<MidiManagerEvents> {
   }
 
   public setSmoothFactor( key: string, smoothFactor: number ): void {
-    this.__params[ key ]!.smoothFactor = smoothFactor;
+    if ( !this.__params[ key ] ) {
+      this.__createParam( key );
+    }
+
+    this.__params[ key ].smoothFactor = smoothFactor;
   }
 
   public async initMidi(): Promise<void> {
@@ -187,6 +191,20 @@ export class MidiManager extends EventEmittable<MidiManagerEvents> {
     this.__updateDOM();
   }
 
+  private __handleWheel( key: string, event: WheelEvent ): void {
+    const param = this.__params[ key ]!;
+    let delta = 0.001 * event.deltaY;
+    if ( event.altKey ) {
+      delta *= 0.1;
+    }
+
+    this.__changeValue(
+      key,
+      saturate( param.rawValue - delta )
+    );
+    this.__updateDOM();
+  }
+
   private __updateDOM(): void {
     const dom = this.__dom;
     if ( !dom ) { return; }
@@ -196,7 +214,8 @@ export class MidiManager extends EventEmittable<MidiManagerEvents> {
       if ( !domParam ) {
         domParam = document.createElement( 'div' ) as HTMLDivElement;
         domParam.className = key;
-        domParam.onclick = () => { this.learn( key ); };
+        domParam.onclick = () => this.learn( key );
+        domParam.onwheel = ( event ) => this.__handleWheel( key, event );
 
         // dict
         const done = Array.from( dom.childNodes ).some( ( _child ) => {

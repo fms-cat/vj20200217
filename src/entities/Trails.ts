@@ -54,7 +54,7 @@ export class Trails {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/trails-compute.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           Shaders.quadVert,
           require( '../shaders/trails-compute.frag' ).default
         );
@@ -162,7 +162,7 @@ export class Trails {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/trails-render.vert', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           require( '../shaders/trails-render.vert' ).default,
           require( '../shaders/trails-render.frag' ).default
         );
@@ -171,7 +171,7 @@ export class Trails {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/trails-render.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           require( '../shaders/trails-render.vert' ).default,
           require( '../shaders/trails-render.frag' ).default
         );

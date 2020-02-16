@@ -5,40 +5,46 @@ import { Quad } from '../heck/components/Quad';
 import { RenderTarget } from '../heck/RenderTarget';
 import { Shaders } from '../shaders';
 
-export interface PostOptions {
+export interface GlitchOptions {
   input: GLCatTexture;
   target: RenderTarget;
 }
 
-export class Post {
+export class Glitch {
   private __entity: Entity;
 
   public get entity(): Entity {
     return this.__entity;
   }
 
-  public constructor( options: PostOptions ) {
+  private __material: Material;
+
+  public get material(): Material {
+    return this.__material;
+  }
+
+  public constructor( options: GlitchOptions ) {
     this.__entity = new Entity();
 
-    // -- post -------------------------------------------------------------------------------------
-    const material = new Material(
+    // -- quad -------------------------------------------------------------------------------------
+    this.__material = new Material(
       Shaders.quadVert,
-      require( '../shaders/post.frag' ).default
+      require( '../shaders/glitch.frag' ).default
     );
-    material.addUniformTexture( 'sampler0', options.input );
+    this.__material.addUniformTexture( 'sampler0', options.input );
 
     if ( module.hot ) {
-      module.hot.accept( '../shaders/post.frag', () => {
-        material.cueShader(
+      module.hot.accept( '../shaders/glitch.frag', () => {
+        this.__material.cueShader(
           Shaders.quadVert,
-          require( '../shaders/post.frag' ).default
+          require( '../shaders/glitch.frag' ).default
         );
       } );
     }
 
     this.__entity.components.push( new Quad( {
       target: options.target,
-      material
+      material: this.__material
     } ) );
   }
 }

@@ -10,8 +10,8 @@
 #define MODE_GRID 1
 #define MODE_CIRCLE 2
 #define MODE_CHAR 3
-#define MODE_BUTTON 4
-#define MODE_ICON 5
+#define MODE_ICON 4
+#define MODE_BUTTON 5
 #define MODES 6
 
 // -------------------------------------------------------------------------------------------------
@@ -21,7 +21,6 @@ attribute vec2 p;
 
 varying vec4 vPosition;
 varying vec3 vNormal;
-varying vec4 vColor;
 varying vec2 vUv;
 varying vec4 vDice;
 varying float vMode;
@@ -34,6 +33,7 @@ uniform float ppp;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 modelMatrix;
+uniform mat4 normalMatrix;
 
 uniform bool isShadow;
 
@@ -75,13 +75,7 @@ void main() {
   // == assign varying variables ===================================================================
   vDice = random( tex1.xy * 182.92 );
 
-  vNormal = normalize( ( modelMatrix * vec4( 0.0, 0.0, 1.0, 0.0 ) ).xyz );
-
-  vColor.xyz = (
-    vDice.y < 0.8
-    ? pow( catColor( TAU * ( ( vDice.x * 2.0 - 1.0 ) * colorVar + 0.4 + colorOffset ) ), vec3( 2.0 ) )
-    : vec3( 0.4 )
-  );
+  vNormal = normalize( ( normalMatrix * vec4( 0.0, 0.0, 1.0, 1.0 ) ).xyz );
 
   vUv = 0.5 + 0.5 * p;
 

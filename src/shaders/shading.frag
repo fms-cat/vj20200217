@@ -1,6 +1,11 @@
 #define MTL_NONE 0
 #define MTL_UNLIT 1
 #define MTL_PBR 2
+#define MTL_GRADIENT 3
+
+#define AO_ITER 8
+#define AO_BIAS 0.0
+#define AO_RADIUS 0.5
 
 #define PI 3.14159265359
 #define TAU 6.28318530718
@@ -10,6 +15,8 @@
 
 #define saturate(x) clamp(x,0.,1.)
 #define linearstep(a,b,x) saturate(((x)-(a))/((b)-(a)))
+
+#extension GL_OES_standard_derivatives : enable
 
 precision highp float;
 
@@ -21,7 +28,8 @@ uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform mat4 lightPV;
 uniform vec2 lightNearFar;
-uniform mat4 viewMatrix;
+uniform mat4 cameraView;
+uniform mat4 cameraPV;
 uniform float midiCC[ 128 ];
 
 uniform sampler2D sampler0; // position.xyz, depth
@@ -31,8 +39,28 @@ uniform sampler2D sampler3; // materialParams.xyz, materialId
 uniform sampler2D samplerShadow;
 uniform sampler2D samplerBRDFLUT;
 uniform sampler2D samplerEnv;
+uniform sampler2D samplerAo;
+uniform sampler2D samplerRandom;
 
+// == commons ======================================================================================
+#pragma glslify: prng = require( ./-prng );
+
+vec3 randomSphere( inout vec4 seed ) {
+  vec3 v;
+  for ( int i = 0; i < 10; i ++ ) {
+    v = vec3(
+      prng( seed ),
+      prng( seed ),
+      prng( seed )
+    ) * 2.0 - 1.0;
+    if ( length( v ) < 1.0 ) { break; }
+  }
+  return v;
+}
+
+// == structs ======================================================================================
 struct Isect {
+  vec2 screenUv;
   vec3 albedo;
   vec3 position;
   float depth;
@@ -63,9 +91,10 @@ AngularInfo genAngularInfo( Isect isect ) {
   return aI;
 }
 
-float getShadow( Isect isect, AngularInfo aI ) {
+// == features =====================================================================================
+float castShadow( Isect isect, AngularInfo aI ) {
   float depth = linearstep( lightNearFar.x, lightNearFar.y, length( isect.position - lightPos ) );
-  float bias = 0.01 + 0.01 * ( 1.0 - aI.dotNL );
+  float bias = 0.0001 + 0.0001 * ( 1.0 - aI.dotNL );
   depth -= bias;
 
   vec4 proj = lightPV * vec4( isect.position, 1.0 );
@@ -79,22 +108,23 @@ float getShadow( Isect isect, AngularInfo aI ) {
   float md = depth - tex.x;
   float p = linearstep( 0.2, 1.0, variance / ( variance + md * md ) );
 
+  float softShadow = md < 0.0 ? 1.0 : p;
+
   return mix(
-    md < 0.0 ? 1.0 : p,
+    softShadow,
     1.0,
     edgeClip
   );
 }
 
-float calcDepth( float z ) {
+float calcDepth( vec3 pos ) {
+  float dist = length( cameraPos - pos );
   float near = cameraNearFar.x;
   float far = cameraNearFar.y;
-  float d = 1.0 / ( far - near );
-  float a = -( near + far ) * d;
-  float b = -2.0 * near * far * d;
-  return linearstep( near, far, -b / ( -z - a ) );
+  return linearstep( near, far, dist );
 }
 
+// == shading functions ============================================================================
 vec3 shadePBR( Isect isect ) {
   // ref: https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/metallic-roughness.frag
 
@@ -104,8 +134,11 @@ vec3 shadePBR( Isect isect ) {
 
   AngularInfo aI = genAngularInfo( isect );
 
-  float shadow = getShadow( isect, aI );
+  float shadow = castShadow( isect, aI );
   shadow = mix( 1.0, shadow, 0.8 );
+
+  float ao = texture2D( samplerAo, isect.screenUv ).x;
+  shadow *= ao;
 
   float lenL = length( isect.position - lightPos );
   float decay = 1.0 / ( lenL * lenL );
@@ -146,6 +179,34 @@ vec3 shadePBR( Isect isect ) {
 
 }
 
+vec3 shadeGradient( Isect isect ) {
+#ifdef IS_FIRST_LIGHT
+  float shade = isect.normal.y;
+
+  vec3 colorA = vec3( 0.01, 0.04, 0.2 );
+  vec3 colorB = vec3( 0.02, 0.2, 0.9 );
+  vec3 colorC = vec3( 0.9, 0.01, 0.6 );
+  vec3 colorD = vec3( 0.9, 0.8, 0.8 );
+  return mix(
+    colorA,
+    mix(
+      colorB,
+      mix(
+        colorC,
+        colorD,
+        linearstep( 0.5, 1.0, shade )
+      ),
+      linearstep( -0.3, 0.5, shade )
+    ),
+    linearstep( -1.0, -0.3, shade )
+  );
+#else // IS_FIRST_LIGHT
+  return vec3( 0.0 );
+#endif // IS_FIRST_LIGHT
+
+}
+
+// == main procedure ===============================================================================
 void main() {
   vec4 tex0 = texture2D( sampler0, vUv );
   vec4 tex1 = texture2D( sampler1, vUv );
@@ -153,6 +214,7 @@ void main() {
   vec4 tex3 = texture2D( sampler3, vUv );
 
   Isect isect;
+  isect.screenUv = vUv;
   isect.position = tex0.xyz;
   isect.depth = tex0.w;
   isect.normal = tex1.xyz;
@@ -173,6 +235,9 @@ void main() {
   } else if ( isect.materialId == MTL_PBR ) {
     color = shadePBR( isect );
 
+  } else if ( isect.materialId == MTL_GRADIENT ) {
+    color = shadeGradient( isect );
+
   }
 
   vec3 xfdA = color;
@@ -180,10 +245,11 @@ void main() {
 
 #ifdef IS_FIRST_LIGHT
   xfdB = 0.5 + 0.5 * isect.normal;
-  xfdB = vec3( calcDepth( tex0.w ) );
+  xfdB = vec3( calcDepth( tex0.xyz ) );
 #endif
+  xfdB = shadeGradient( isect );
 
   gl_FragColor.xyz = mix( xfdA, xfdB, midiCC[ 77 ] );
   gl_FragColor.w = 1.0;
-  gl_FragColor.xyz *= smoothstep( 1.0, 0.7, calcDepth( tex0.w ) );
+  // gl_FragColor.xyz *= smoothstep( 1.0, 0.7, calcDepth( tex0.xyz ) );
 }

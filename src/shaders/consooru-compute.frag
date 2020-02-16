@@ -15,6 +15,8 @@ precision highp float;
 uniform float time;
 uniform float beat;
 
+uniform float linebreakTime;
+
 uniform float particlesSqrt;
 uniform float ppp;
 
@@ -130,13 +132,9 @@ void main() {
     // if you want to remove init frag from the particle, do at here
   }
 
-  // == linebreak ==================================================================================
-  if ( newCharCode == 10 ) {
-    pos.y += 1.0;
-  }
-
   // == update particles ===========================================================================
-  pos += vec3( 0.0, 0.0, 0.5 * ( 1.0 + dice.x ) * lifetime ) * dt;
+  pos.z += 5.0 * ( 1.0 + dice.x ) * smoothstep( 5.0, 6.0, lifetime ) * dt;
+  pos.y += 5.0 * sin( PI * min( linebreakTime / 0.2, 1.0 ) ) * dt;
   lifetime += dt / PARTICLE_LIFE_LENGTH;
 
   gl_FragColor = (

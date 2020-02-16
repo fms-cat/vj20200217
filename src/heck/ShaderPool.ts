@@ -64,11 +64,17 @@ export class ShaderPool<TUser> {
       this.__programUsersMap.set( program, users );
     }
 
-    users.add( user );
+    if ( !users.has( user ) ) {
+      users.add( user );
+    }
   }
 
   private __deleteUser( program: GLCatProgram, user: TUser ): void {
     const users = this.__programUsersMap.get( program )!;
+
+    if ( !users.has( user ) ) {
+      throw new Error( 'Attempt to delete an user of the program but the specified user is not an owner' );
+    }
     users.delete( user );
   }
 

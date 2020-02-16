@@ -49,7 +49,7 @@ export class BigWords {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/bigword.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           Shaders.quadVert,
           require( '../shaders/bigword.frag' ).default
         );

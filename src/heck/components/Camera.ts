@@ -25,10 +25,6 @@ export abstract class Camera extends Component {
 
   public clear: Array<number | undefined> | false = [];
 
-  public vertexOverride?: string;
-
-  public fragmentOverride?: string;
-
   public abstract get near(): number;
 
   public abstract get far(): number;

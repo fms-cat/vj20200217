@@ -35,16 +35,6 @@ export class Mesh extends Component {
     const glCat = DISPLAY.glCat;
     const gl = glCat.renderingContext;
 
-    const originalVert = this.material.vert;
-    if ( event.vertexOverride ) {
-      this.material.vert = event.vertexOverride;
-    }
-
-    const originalFrag = this.material.frag;
-    if ( event.fragmentOverride ) {
-      this.material.frag = event.fragmentOverride;
-    }
-
     const program = this.material.program;
 
     glCat.useProgram( program );
@@ -72,8 +62,5 @@ export class Mesh extends Component {
     program.uniformMatrix4fv( 'projectionMatrix', event.projectionMatrix.elements );
 
     this.geometry.draw();
-
-    this.material.vert = originalVert;
-    this.material.frag = originalFrag;
   }
 }

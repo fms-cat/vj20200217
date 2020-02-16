@@ -1,15 +1,21 @@
+import { GeometryAttribute, GeometryIndex } from '../heck/Geometry';
 import { DISPLAY } from '../heck/DISPLAY';
 import { GL } from '@fms-cat/glcat-ts';
-import { Geometry } from '../heck/Geometry';
+
+interface ResultGenOctahedron {
+  position: GeometryAttribute;
+  normal: GeometryAttribute;
+  index: GeometryIndex;
+  count: number;
+  mode: GLenum;
+}
 
 export function genOctahedron( options: {
   radius?: number;
   div?: number;
-} = {} ): Geometry {
-  const radius = options.radius || 1.0;
-  const div = options.div || 1;
-
-  const geometry = new Geometry();
+} = {} ): ResultGenOctahedron {
+  const radius = options.radius ?? 1.0;
+  const div = options.div ?? 1;
 
   const pos = [];
   const nor = [];
@@ -113,34 +119,31 @@ export function genOctahedron( options: {
     }
   }
 
-  geometry.count = ind.length;
-  geometry.mode = GL.TRIANGLES;
-
-  const vboPosition = DISPLAY.glCat.createBuffer();
-  vboPosition.setVertexbuffer( new Float32Array( pos ) );
-
-  geometry.addAttribute( 'position', {
-    buffer: vboPosition,
+  const position: GeometryAttribute = {
+    buffer: DISPLAY.glCat.createBuffer(),
     type: GL.FLOAT,
     size: 3
-  } );
+  };
+  position.buffer.setVertexbuffer( new Float32Array( pos ) );
 
-  const vboNormal = DISPLAY.glCat.createBuffer();
-  vboNormal.setVertexbuffer( new Float32Array( nor ) );
-
-  geometry.addAttribute( 'normal', {
-    buffer: vboNormal,
+  const normal: GeometryAttribute = {
+    buffer: DISPLAY.glCat.createBuffer(),
     type: GL.FLOAT,
     size: 3
-  } );
+  };
+  normal.buffer.setVertexbuffer( new Float32Array( nor ) );
 
-  const ibo = DISPLAY.glCat.createBuffer();
-  ibo.setIndexbuffer( new Uint16Array( ind ) );
-
-  geometry.setIndex( {
-    buffer: ibo,
+  const index: GeometryIndex = {
+    buffer: DISPLAY.glCat.createBuffer(),
     type: GL.UNSIGNED_SHORT
-  } );
+  };
+  index.buffer.setIndexbuffer( new Uint16Array( ind ) );
 
-  return geometry;
+  return {
+    position,
+    normal,
+    index,
+    count: ind.length,
+    mode: GL.TRIANGLES
+  };
 }

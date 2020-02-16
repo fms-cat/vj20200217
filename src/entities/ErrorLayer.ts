@@ -5,6 +5,7 @@ import { Lambda } from '../heck/components/Lambda';
 import { Material } from '../heck/Material';
 import { Plane } from './Plane';
 import { Shaders } from '../shaders';
+import { Vector3 } from '@fms-cat/experimental';
 
 export class ErrorLayer {
   private __entity: Entity;
@@ -30,6 +31,8 @@ export class ErrorLayer {
 
   public constructor() {
     this.__entity = new Entity();
+    this.__entity.transform.position = new Vector3( [ 0.0, 0.0, 1.0 ] );
+    this.__entity.transform.scale = new Vector3( [ 2.0, 1.0, 1.0 ] );
 
     this.__canvas = document.createElement( 'canvas' );
     this.__canvas.width = 2048;
@@ -52,7 +55,7 @@ export class ErrorLayer {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/errorlayer.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           Shaders.objectVert,
           require( '../shaders/errorlayer.frag' ).default
         );

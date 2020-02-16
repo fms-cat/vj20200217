@@ -68,11 +68,10 @@ export class Entity {
         time: event.time,
         renderTarget: event.renderTarget,
         globalTransform,
+        camera: event.camera,
         viewMatrix: event.viewMatrix,
         projectionMatrix: event.projectionMatrix,
-        entity: this,
-        vertexOverride: event.camera.vertexOverride,
-        fragmentOverride: event.camera.fragmentOverride
+        entity: this
       } );
     } );
 

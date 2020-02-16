@@ -116,7 +116,7 @@ void main() {
 
   // == transformation tweak =======================================================================
   vPosition.xyz *= 0.15;
-  vPosition.xyz += vec3( -2.4, -1.3, 0.5 );
+  vPosition.xyz += vec3( -2.4, -1.3, 1.2 );
 
   // == send the vertex position ===================================================================
   vPosition = modelMatrix * vPosition;

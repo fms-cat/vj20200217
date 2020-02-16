@@ -5,6 +5,8 @@ import { SHADERPOOL } from './ShaderPool';
 import { matchAll } from '../utils/matchAll';
 
 export class Material {
+  private static __cueMaterials: Set<Material> = new Set();
+
   protected __defines: {
     [ name: string ]: ( string | undefined );
   };
@@ -29,20 +31,36 @@ export class Material {
     };
   } = {};
 
-  public vert: string;
+  private __vert: string;
+
+  public get vert(): string {
+    return this.__vert;
+  }
 
   public get vertWithDefines(): string {
     return this.__definesString + this.vert;
   }
 
-  public frag: string;
+  private __frag: string;
+
+  public get frag(): string {
+    return this.__frag;
+  }
 
   public get fragWithDefines(): string {
     return this.__definesString + this.frag;
   }
 
+  private __vertCue: string | null = null;
+
+  private __fragCue: string | null = null;
+
   public get program(): GLCatProgram {
-    return SHADERPOOL.getProgram( this.vertWithDefines, this.fragWithDefines, this );
+    return SHADERPOOL.getProgram(
+      this.vertWithDefines,
+      this.fragWithDefines,
+      this
+    );
   }
 
   public blend: [ GLenum, GLenum ] = [ GL.ONE, GL.ZERO ];
@@ -52,8 +70,8 @@ export class Material {
     frag: string,
     defines?: { [ key: string ]: ( string | undefined ) }
   ) {
-    this.vert = vert;
-    this.frag = frag;
+    this.__vert = vert;
+    this.__frag = frag;
     this.__defines = defines || {};
   }
 
@@ -95,10 +113,18 @@ export class Material {
     gl.blendFunc( ...this.blend );
   }
 
-  public async compileShaderAsync(
+  public async cueShader(
     vert: string,
     frag: string
   ): Promise<void> {
+    if ( this.__vertCue && this.__fragCue ) {
+      SHADERPOOL.discardProgram(
+        this.__definesString + this.__vertCue,
+        this.__definesString + this.__fragCue,
+        this
+      );
+    }
+
     const d = performance.now();
 
     const program = await SHADERPOOL.getProgramAsync(
@@ -111,27 +137,53 @@ export class Material {
       // throw e;
     } );
 
-    if ( !program ) { return; }
+    if ( !program ) {
+      this.__vertCue = null;
+      this.__fragCue = null;
+      Material.__cueMaterials.delete( this );
+      return;
+    } else if ( this.program === program ) {
+      this.__vertCue = null;
+      this.__fragCue = null;
+      Material.__cueMaterials.delete( this );
+    } else {
+      this.__vertCue = vert;
+      this.__fragCue = frag;
+      Material.__cueMaterials.add( this );
+    }
 
     EVENTMAN.emitInfo( `Compiled a shader in ${ ( performance.now() - d ).toFixed( 3 ) }ms` );
+  }
 
-    const fn = (): void => {
-      EVENTMAN.off( 'applyShaders', fn );
+  public applyCueProgram(): void {
+    if ( !this.__vertCue || !this.__fragCue ) {
+      console.warn( 'Attempt to apply a cue program but there was no cue' );
+      return;
+    }
 
-      const regexResult = matchAll( vert + frag, /(^|\s+)([a-zA-Z][a-zA-Z0-9_]+)/gm );
-      EVENTMAN.emitWords( regexResult.map( ( r ) => r[ 2 ] ) );
+    const prevVert = this.vertWithDefines;
+    const prevFrag = this.fragWithDefines;
 
-      const prevVert = this.__definesString + this.vert;
-      const prevFrag = this.__definesString + this.frag;
+    this.__vert = this.__vertCue;
+    this.__frag = this.__fragCue;
 
-      this.vert = vert;
-      this.frag = frag;
+    SHADERPOOL.discardProgram( prevVert, prevFrag, this );
 
-      SHADERPOOL.discardProgram( prevVert, prevFrag, this );
+    this.__vertCue = null;
+    this.__fragCue = null;
 
-      EVENTMAN.emitInfo( 'Applied a shader' );
-    };
-    EVENTMAN.on( 'applyShaders', fn );
+    EVENTMAN.emitInfo( 'Applied a shader' );
+
+    const str = this.__vert + this.__frag;
+    const regexResult = matchAll( str, /(^|\s+)([a-zA-Z][a-zA-Z0-9_]+)/gm );
+    EVENTMAN.emitWords( regexResult.map( ( r ) => r[ 2 ] ) );
+  }
+
+  public static applyCuePrograms(): void {
+    Material.__cueMaterials.forEach( ( material ) => {
+      material.applyCueProgram();
+    } );
+    Material.__cueMaterials.clear();
   }
 
   protected get __definesString(): string {

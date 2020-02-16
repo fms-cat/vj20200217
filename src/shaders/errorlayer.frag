@@ -7,7 +7,7 @@
 #define MTL_UNLIT 1
 #define MTL_PBR 2
 
-#extension GL_EXT_draw_buffers : require
+#extension GL_EXT_draw_buffers : enable
 
 precision highp float;
 
@@ -82,7 +82,7 @@ vec4 fetch( vec2 uv ) {
 
   // -- check ---------------------------------------------------------------------------------------
   float animCheck = ( 1.0 - exp( -10.0 * resolvedTime ) );
-  vec2 uvtc = rotate2D( -PI / 4.0 * animCheck ) * ( ( uvt - 0.5 ) * vec2( 2.0, 1.0 ) );
+  vec2 uvtc = rotate2D( -PI / 4.0 ) * ( ( uvt - 0.5 ) * vec2( 2.0, 1.0 ) );
   float thicc = 0.05 * animCheck;
   b += (
     step( abs( uvtc.x - 0.15 ), thicc ) * step( abs( uvtc.y + 0.05 ), 0.25 + thicc )
@@ -97,7 +97,7 @@ vec4 fetch( vec2 uv ) {
   }
 
   return vec4( mix(
-    vec3( 0.4, 0.01, 0.01 ),
+    vec3( 0.5, 0.01, 0.01 ),
     vec3( 1.0 ),
     saturate( b )
   ), 1.0 );

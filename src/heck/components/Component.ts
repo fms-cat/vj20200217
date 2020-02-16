@@ -1,3 +1,4 @@
+import { Camera } from './Camera';
 import { Entity } from '../Entity';
 import { Matrix4 } from '@fms-cat/experimental';
 import { RenderTarget } from '../RenderTarget';
@@ -14,13 +15,12 @@ export interface ComponentUpdateEvent {
 export interface ComponentDrawEvent {
   frameCount: number;
   time: number;
+  camera: Camera;
   renderTarget: RenderTarget;
   globalTransform: Transform;
   viewMatrix: Matrix4;
   projectionMatrix: Matrix4;
   entity: Entity;
-  vertexOverride?: string;
-  fragmentOverride?: string;
 }
 
 export class Component {

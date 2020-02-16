@@ -1,7 +1,8 @@
+import { GL, GLCatTexture } from '@fms-cat/glcat-ts';
 import { BufferRenderTarget } from '../heck/BufferRenderTarget';
+import CONFIG from '../config.json';
 import { DISPLAY } from '../heck/DISPLAY';
 import { Entity } from '../heck/Entity';
-import { GL } from '@fms-cat/glcat-ts';
 import { Lambda } from '../heck/components/Lambda';
 import { LightEntity } from './LightEntity';
 import { Material } from '../heck/Material';
@@ -29,6 +30,7 @@ export interface CameraEntityOptions {
   root: Entity;
   target: RenderTarget;
   lights: LightEntity[];
+  textureRandom: GLCatTexture;
 }
 
 export class CameraEntity {
@@ -68,6 +70,52 @@ export class CameraEntity {
     } );
     this.__entity.components.push( this.__camera );
 
+    const aoTarget = new BufferRenderTarget( {
+      width: CONFIG.aoRatio * options.target.width,
+      height: CONFIG.aoRatio * options.target.height
+    } );
+
+    const aoMaterial = new Material(
+      Shaders.quadVert,
+      require( '../shaders/ao.frag' ).default
+    );
+
+    this.__entity.components.push( new Lambda( () => {
+      const cameraView = this.__entity.transform.matrix.inverse!;
+
+      aoMaterial.addUniformVector(
+        'cameraPV',
+        'Matrix4fv',
+        this.camera.projectionMatrix.multiply(
+          cameraView
+        ).elements
+      );
+    } ) );
+
+    for ( let i = 0; i < 2; i ++ ) { // it doesn't need 2 and 3
+      aoMaterial.addUniformTexture(
+        'sampler' + i,
+        cameraTarget.getTexture( GL.COLOR_ATTACHMENT0 + i )
+      );
+    }
+
+    aoMaterial.addUniformTexture( 'samplerRandom', options.textureRandom );
+
+    if ( module.hot ) {
+      module.hot.accept( '../shaders/ao.frag', () => {
+        aoMaterial.cueShader(
+          Shaders.quadVert,
+          require( '../shaders/ao.frag' ).default
+        );
+      } );
+    }
+
+    const aoQuad = new Quad( {
+      material: aoMaterial,
+      target: aoTarget
+    } );
+    this.__entity.components.push( aoQuad );
+
     const shadingMaterials = options.lights.map( ( light, iLight ) => {
       const shadingMaterial = new Material(
         Shaders.quadVert,
@@ -78,10 +126,20 @@ export class CameraEntity {
       );
 
       this.__entity.components.push( new Lambda( () => {
+        const cameraView = this.__entity.transform.matrix.inverse!;
+
         shadingMaterial.addUniformVector(
-          'viewMatrix',
+          'cameraView',
           'Matrix4fv',
-          this.__entity.transform.matrix.inverse!.elements
+          cameraView.elements
+        );
+
+        shadingMaterial.addUniformVector(
+          'cameraPV',
+          'Matrix4fv',
+          this.camera.projectionMatrix.multiply(
+            cameraView
+          ).elements
         );
 
         shadingMaterial.addUniform(
@@ -133,9 +191,11 @@ export class CameraEntity {
       }
 
       shadingMaterial.blend = [ GL.ONE, GL.ONE ];
+      shadingMaterial.addUniformTexture( 'samplerAo', aoTarget.texture );
       shadingMaterial.addUniformTexture( 'samplerShadow', light.shadowMap.texture );
       shadingMaterial.addUniformTexture( 'samplerBRDFLUT', textureBRDFLUT );
       shadingMaterial.addUniformTexture( 'samplerEnv', textureEnv );
+      shadingMaterial.addUniformTexture( 'samplerRandom', options.textureRandom );
 
       const shadingQuad = new Quad( {
         material: shadingMaterial,
@@ -150,7 +210,7 @@ export class CameraEntity {
     if ( module.hot ) {
       module.hot.accept( '../shaders/shading.frag', () => {
         shadingMaterials.forEach( ( material ) => {
-          material.compileShaderAsync(
+          material.cueShader(
             Shaders.quadVert,
             require( '../shaders/shading.frag' ).default
           );

@@ -1,5 +1,7 @@
 {
-  "resolution": [ 1280, 720 ],
+  "resolution": [ 1920, 1080 ],
   "randomReso": [ 32, 32 ],
-  "randomStaticReso": [ 1024, 1024 ]
+  "screenReso": [ 1920, 1080 ],
+  "randomStaticReso": [ 1024, 1024 ],
+  "aoRatio": 0.5
 }

@@ -5,6 +5,7 @@ import { PerspectiveCamera } from '../heck/components/PerspectiveCamera';
 import { Quad } from '../heck/components/Quad';
 import { Shaders } from '../shaders';
 import { Swap } from '@fms-cat/experimental';
+import { Lambda } from '../heck/components/Lambda';
 
 export interface LightEntityOptions {
   root: Entity;
@@ -84,8 +85,13 @@ export class LightEntity {
       Shaders.quadVert,
       Shaders.posToDepthFrag
     );
-    materialConvert.addUniform( 'perspNearFar', '2f', near, far );
+
     materialConvert.addUniformTexture( 'sampler0', swap.i.texture );
+
+    this.__entity.components.push( new Lambda( () => {
+      materialConvert.addUniform( 'cameraPos', '3f', ...this.entity.transform.position.elements );
+      materialConvert.addUniform( 'cameraNearFar', '2f', this.camera.near, this.camera.far );
+    } ) );
 
     this.__entity.components.push( new Quad( {
       target: swap.o,

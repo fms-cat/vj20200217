@@ -6,17 +6,26 @@
 #define lofi(i,m) (floor((i)/(m))*(m))
 #define lofir(i,m) (floor((i+0.5)/(m))*(m))
 
+#define MODE_RECT 0
+#define MODE_GRID 1
+#define MODE_CIRCLE 2
+#define MODE_CHAR 3
+#define MODE_BUTTON 4
+#define MODE_ICON 5
+#define MODES 6
+
 // -------------------------------------------------------------------------------------------------
 
-attribute float computeU;
-attribute float computeV;
-attribute float triIndex;
+attribute vec2 computeUV;
+attribute vec3 position;
+attribute vec3 normal;
 
 varying vec4 vPosition;
 varying vec3 vNormal;
 varying vec4 vColor;
+varying vec2 vUv;
+varying vec4 vDice;
 varying float vLife;
-varying vec4 vRandom;
 
 uniform vec2 resolution;
 uniform vec2 resolutionCompute;
@@ -57,42 +66,39 @@ mat2 rotate2D( float _t ) {
 // -------------------------------------------------------------------------------------------------
 
 void main() {
-  vec2 puv = vec2( computeU, computeV );
+  vec2 puv = vec2( computeUV );
   vec2 dppix = vec2( 1.0 ) / resolutionCompute;
 
   // == fetch texture ==============================================================================
-  vec4 pos = texture2D( samplerCompute, puv );
-  vec4 vel = texture2D( samplerCompute, puv + dppix * vec2( 1.0, 0.0 ) );
-  vec4 velp = texture2D( samplerCompute, puv + dppix * vec2( -ppp + 1.0, 0.0 ) );
+  vec4 tex0 = texture2D( samplerCompute, puv );
+  vec4 tex1 = texture2D( samplerCompute, puv + dppix * vec2( 1.0, 0.0 ) );
 
   // == assign varying variables ===================================================================
-  vLife = pos.w;
+  vDice = random( puv.xy * 182.92 );
 
-  vRandom = random( puv.yy * 182.92 );
+  vColor.xyz = vec3( 1.0 );
 
-  vColor.xyz = (
-    vRandom.y < 0.8
-    ? pow( catColor( TAU * ( ( vRandom.x * 2.0 - 1.0 ) * colorVar + colorOffset ) ), vec3( 2.0 ) )
-    : vec3( 0.4 )
-  );
+  vLife = tex0.w;
 
-  vColor.w = ( velp.w < 0.5 && vel.w < 0.5 && 0.0 < vLife ) ? 1.0 : -1.0;
+  // == compute size ===============================================================================
+  vPosition = vec4( tex0.xyz, 1.0 );
 
-  // == compute size and direction =================================================================
-  float size = 0.005;
-  size *= 1.0 + pow( vRandom.w, 2.0 );
-  // size *= max( 0.0, sin( PI * 10.0 * vLife ) );
+  float size = vDice.x * 0.08;
+  size *= sin( PI * saturate( vLife ) );
 
-  vec3 dir = normalize( vel.xyz );
-  vec3 sid = normalize( cross( dir, vec3( 0.0, 1.0, 0.0 ) ) );
-  vec3 top = normalize( cross( sid, dir ) );
+  vec3 shape = position * size;
+  shape.yz = rotate2D( 7.0 * vPosition.x ) * shape.yz;
+  shape.zx = rotate2D( 7.0 * vPosition.y ) * shape.zx;
 
-  float theta = triIndex / 3.0 * TAU + vLife * 1.0;
-  vec2 tri = vec2( sin( theta ), cos( theta ) );
-  vNormal = ( normalMatrix * vec4( tri.x * sid + tri.y * top, 1.0 ) ).xyz;
-  pos.xyz += size * vNormal;
+  vPosition.xyz += shape;
 
-  vPosition = modelMatrix * vec4( pos.xyz, 1.0 );
+  // == compute normals ============================================================================
+  vNormal = ( normalMatrix * vec4( normal, 1.0 ) ).xyz;
+  vNormal.yz = rotate2D( 7.0 * vPosition.x ) * vNormal.yz;
+  vNormal.zx = rotate2D( 7.0 * vPosition.y ) * vNormal.zx;
+
+  // == send the vertex position ===================================================================
+  vPosition = modelMatrix * vPosition;
   vec4 outPos = projectionMatrix * viewMatrix * vPosition;
   outPos.x *= resolution.y / resolution.x;
   gl_Position = outPos;

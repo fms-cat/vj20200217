@@ -8,6 +8,12 @@
 #define lofi(i,m) (floor((i)/(m))*(m))
 #define lofir(i,m) (floor((i)/(m)+.5)*(m))
 
+#define MODE_RECT 0
+#define MODE_GRID 1
+#define MODE_CIRCLE 2
+#define MODE_CHAR 3
+#define MODE_ICON 4
+#define MODE_BUTTON 5
 #define MODES 6
 
 // ------
@@ -32,6 +38,8 @@ uniform float noiseScale;
 uniform float noisePhase;
 // uniform float velScale;
 // uniform float genRate;
+
+uniform float midiCC[ 128 ];
 
 // ------
 
@@ -127,7 +135,7 @@ void main() {
   // == initialize particles =======================================================================
   if (
     time - deltaTime < timing && timing <= time
-    // prng( seed ) < genRate
+    && prng( seed ) < midiCC[ 17 ]
   ) {
     dt = time - timing;
 
@@ -137,7 +145,8 @@ void main() {
 
     life = 1.0;
 
-    mode = int( prng( seed ) * float( MODES ) );
+    mode = int( prng( seed ) * midiCC[ 18 ] * float( MODES ) );
+    // mode = prng( seed ) < 0.5 ? MODE_ICON : mode;
   } else {
     // do nothing
     // if you want to remove init frag from the particle, do at here

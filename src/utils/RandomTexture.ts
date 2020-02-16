@@ -8,7 +8,7 @@ export class RandomTexture {
   private __width: number;
   private __height: number;
 
-  constructor( glCat: GLCat, width: number, height: number = width ) {
+  public constructor( glCat: GLCat, width: number, height: number = width ) {
     this.__width = width;
     this.__height = height;
     this.__rng = new Xorshift();
@@ -21,11 +21,11 @@ export class RandomTexture {
     return this.__texture;
   }
 
-  public dispose() {
+  public dispose(): void {
     this.__texture.dispose();
   }
 
-  public update( seed?: number ) {
+  public update( seed?: number ): void {
     if ( seed ) { this.__rng.seed = seed; }
 
     for ( let i = 0; i < this.__array.length; i ++ ) {

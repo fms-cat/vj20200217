@@ -2,7 +2,7 @@ precision highp float;
 
 #define MTL_UNLIT 1
 
-#extension GL_EXT_draw_buffers : require
+#extension GL_EXT_draw_buffers : enable
 
 varying vec4 vPosition;
 varying vec3 vNormal;

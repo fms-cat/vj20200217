@@ -40,7 +40,13 @@ export class Consooru {
     return this.__entity;
   }
 
+  public linebreakDelay = 0.2;
+
+  private __linebreakTime = 99999.0;
+
   private __gpuParticles: GPUParticles;
+
+  private __particles: number;
 
   public get materialCompute(): Material {
     return this.__gpuParticles.materialCompute;
@@ -56,7 +62,7 @@ export class Consooru {
 
   public constructor( options: ConsooruOptions ) {
     const { particlesSqrt } = options;
-    const particles = particlesSqrt * particlesSqrt;
+    this.__particles = particlesSqrt * particlesSqrt;
 
     this.__entity = new Entity();
 
@@ -71,30 +77,9 @@ export class Consooru {
     this.__gpuParticles.meshRender.cull = MeshCull.None;
     this.__entity.children.push( this.__gpuParticles.entity );
 
-    this.__entity.components.push( new Lambda( () => {
-      if ( this.__charCue.length > 0 ) {
-        const { code, mode } = this.__charCue.shift()!;
-        this.__gpuParticles.materialCompute.addUniform(
-          'newChar',
-          '4f',
-          code,
-          mode,
-          this.__position,
-          this.__head / particles
-        );
-
-        if ( code === 10 ) {
-          this.__position = 0;
-        } else {
-          this.__position ++;
-          this.__head = ( this.__head + 1 ) % particles;
-        }
-      } else {
-        this.__gpuParticles.materialCompute.addUniform( 'newChar', '4f', 0.0, 0.0, 0.0, 0.0 );
-      }
+    this.__entity.components.push( new Lambda( ( event ) => {
+      this.__update( event.deltaTime );
     } ) );
-
-    this.info( 'Ready' );
   }
 
   public error( text: string ): void {
@@ -127,6 +112,54 @@ export class Consooru {
     } );
   }
 
+  private __update( deltaTime: number ): void {
+    this.__linebreakTime += deltaTime;
+    this.__gpuParticles.materialCompute.addUniform(
+      'linebreakTime',
+      '1f',
+      this.__linebreakTime
+    );
+
+    if ( this.__charCue.length > 0 && this.__linebreakTime > this.linebreakDelay ) {
+      const { code, mode } = this.__charCue.shift()!;
+
+      if ( code === 10 ) {
+        this.__gpuParticles.materialCompute.addUniform(
+          'newChar',
+          '4f',
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        );
+
+        this.__position = 0;
+        this.__linebreakTime = 0.0;
+      } else {
+        this.__gpuParticles.materialCompute.addUniform(
+          'newChar',
+          '4f',
+          code,
+          mode,
+          this.__position,
+          this.__head / this.__particles
+        );
+
+        this.__position ++;
+        this.__head = ( this.__head + 1 ) % this.__particles;
+      }
+    } else {
+      this.__gpuParticles.materialCompute.addUniform(
+        'newChar',
+        '4f',
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      );
+    }
+  }
+
   private __createMaterialCompute( options: ConsooruOptions ): Material {
     const material = new Material(
       Shaders.quadVert,
@@ -139,7 +172,7 @@ export class Consooru {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/consooru-compute.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           Shaders.quadVert,
           require( '../shaders/consooru-compute.frag' ).default
         );
@@ -207,14 +240,14 @@ export class Consooru {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/consooru-render.vert', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           require( '../shaders/consooru-render.vert' ).default,
           require( '../shaders/consooru-render.frag' ).default
         );
       } );
 
       module.hot.accept( '../shaders/consooru-render.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           require( '../shaders/consooru-render.vert' ).default,
           require( '../shaders/consooru-render.frag' ).default
         );

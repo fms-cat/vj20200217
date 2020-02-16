@@ -6,7 +6,7 @@ precision highp float;
 #define linearstep(a,b,x) saturate(((x)-(a))/((b)-(a)))
 #define lofi(i,m) (floor((i)/(m))*(m))
 
-#extension GL_EXT_draw_buffers : require
+#extension GL_EXT_draw_buffers : enable
 
 varying vec4 vPosition;
 varying vec3 vNormal;
@@ -16,14 +16,6 @@ uniform float time;
 uniform vec2 uvScale;
 
 #pragma glslify: noise = require( ./-simplex4d );
-
-float plasmaField( vec2 p, float t ) {
-  // https://www.bidouille.org/prog/plasma
-  float field = sin( 4.0 * p.x - t );
-  field += 1.4 * sin( 4.0 * ( p.x * sin( t * 0.8 ) + p.y * cos( t * 0.7 ) + t ) );
-  field += 2.0 * sin( 2.0 * ( p.x * sin( t * 0.5 ) + p.y * cos( t * 0.3 ) + t ) );
-  return field / 8.8 + 0.5;
-}
 
 void main() {
   vec2 uv = uvScale * ( vUv - 0.5 );

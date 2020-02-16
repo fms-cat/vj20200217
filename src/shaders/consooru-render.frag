@@ -12,8 +12,8 @@
 #define MTL_UNLIT 1
 #define MTL_PBR 2
 
-#extension GL_EXT_draw_buffers : require
-#extension GL_OES_standard_derivatives : require
+#extension GL_EXT_draw_buffers : enable
+#extension GL_OES_standard_derivatives : enable
 
 precision highp float;
 

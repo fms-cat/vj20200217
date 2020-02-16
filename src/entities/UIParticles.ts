@@ -110,7 +110,7 @@ export class UIParticles {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/ui-particles-compute.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           Shaders.quadVert,
           require( '../shaders/ui-particles-compute.frag' ).default
         );
@@ -181,14 +181,14 @@ export class UIParticles {
 
     if ( module.hot ) {
       module.hot.accept( '../shaders/ui-particles-render.vert', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           require( '../shaders/ui-particles-render.vert' ).default,
           require( '../shaders/ui-particles-render.frag' ).default
         );
       } );
 
       module.hot.accept( '../shaders/ui-particles-render.frag', () => {
-        material.compileShaderAsync(
+        material.cueShader(
           require( '../shaders/ui-particles-render.vert' ).default,
           require( '../shaders/ui-particles-render.frag' ).default
         );

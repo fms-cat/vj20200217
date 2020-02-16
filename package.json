@@ -10,8 +10,8 @@
     "build": "yarn build-dev && yarn build-prod"
   },
   "devDependencies": {
-    "@fms-cat/experimental": "^0.1.3",
-    "@fms-cat/glcat-ts": "^0.7.3",
+    "@fms-cat/experimental": "^0.2.0",
+    "@fms-cat/glcat-ts": "^0.10.0",
     "@types/webmidi": "^2.0.4",
     "@types/webpack-env": "^1.15.1",
     "@typescript-eslint/eslint-plugin": "^2.19.0",

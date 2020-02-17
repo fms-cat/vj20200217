@@ -32,5 +32,5 @@ void main() {
   gl_FragData[ 0 ] = vPosition;
   gl_FragData[ 1 ] = vec4( vNormal, 1.0 );
   gl_FragData[ 2 ] = vec4( vColor.xyz, 1.0 );
-  gl_FragData[ 3 ] = vec4( vec3( 0.2, 0.5, 0.0 ), MTL_PBR );
+  gl_FragData[ 3 ] = vec4( vec3( 10.0, 0.5, 0.8 ), MTL_IRIDESCENT );
 }

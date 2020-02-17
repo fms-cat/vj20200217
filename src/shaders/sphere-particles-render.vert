@@ -77,7 +77,7 @@ void main() {
   vDice = random( puv.xy * 182.92 );
 
   vColor.xyz = 0.8 * mix( catColor( 2.0 + 40.0 * vDice.x ), vec3( 0.9 ), 0.0 );
-  // vColor.xyz = vec3( 0.6 );
+  vColor.xyz = vec3( 0.2 );
 
   vLife = tex0.w;
 

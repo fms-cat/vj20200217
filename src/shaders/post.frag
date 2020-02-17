@@ -20,34 +20,10 @@ uniform float errorTime;
 uniform vec2 resolution;
 
 uniform sampler2D sampler0;
-uniform sampler2D samplerLut;
 
 uniform float midiCC[ 128 ];
 
 // ------
-
-vec3 lut( vec3 i ) {
-  vec2 uv = saturate( mix(
-    vec2( 0.5 / 1024.0, 0.5 / 32.0 ),
-    vec2( 31.5 / 1024.0, 31.5 / 32.0 ),
-    i.rg
-  ) );
-  uv.y = 1.0 - uv.y;
-
-  vec2 uvA = uv;
-  float lofiB = lofi( clamp( i.b, 0.0, 0.999 ), 1.0 / 32.0 );
-  uvA.x += lofiB;
-  vec3 texA = texture2D( samplerLut, uvA ).xyz;
-
-  vec2 uvB = uvA + 1.0 / vec2( 1.0, 32.0 );
-  vec3 texB = texture2D( samplerLut, uvB ).xyz;
-
-  return mix(
-    texA,
-    texB,
-    i.b - lofiB
-  );
-}
 
 vec3 colorMap( vec3 i ) {
   return vec3(

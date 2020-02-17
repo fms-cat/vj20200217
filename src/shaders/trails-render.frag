@@ -28,7 +28,7 @@ mat2 rotate2D( float _t ) {
 void main() {
   if ( vColor.a < 0.0 ) { discard; }
 
-  float emissive = 41.0;
+  float emissive = 40.0;
   // emissive *= 0.5 + 0.5 * sin( TAU * vRandom.z + 20.0 * time );
 
   gl_FragData[ 0 ] = vPosition;

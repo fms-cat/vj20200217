@@ -11,7 +11,7 @@ varying vec3 vNormal;
 
 void main() {
   vec3 color = 0.5 - 0.5 * vNormal;
-  color = color.yyy * 0.1;
+  // color = color.yyy * vec3( 0.2, 0.3, 0.4 );
 
   gl_FragData[ 0 ] = vPosition;
   gl_FragData[ 1 ] = vec4( -vNormal, 1.0 );

@@ -1,8 +1,12 @@
+#define MARCH_ITER 50
+
 #define saturate(x) clamp(x,0.,1.)
 #define linearstep(a,b,x) saturate(((x)-(a))/((b)-(a)))
 
 #define MTL_UNLIT 1
 #define MTL_PBR 2
+#define MTL_GRADIENT 3
+#define MTL_IRIDESCENT 4
 
 #extension GL_EXT_frag_depth : enable
 #extension GL_EXT_draw_buffers : enable
@@ -22,53 +26,16 @@ uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 inversePV;
 
+uniform float midiCC[ 128 ];
+
 vec3 divideByW( vec4 v ) {
   return v.xyz / v.w;
 }
 
-mat2 rot2d( float t ) {
-  float c = cos( t );
-  float s = sin( t );
-  return mat2( c, -s, s, c );
-}
-
-vec3 ifs( vec3 p, vec3 r, vec3 t ) {
-  vec3 s = t;
-
-  for ( int i = 0; i < 5; i ++ ) {
-    p = abs( p ) - abs( s ) * pow( 0.5, float( i ) );
-
-    s.yz = rot2d( r.x ) * s.yz;
-    s.zx = rot2d( r.y ) * s.zx;
-    s.xy = rot2d( r.z ) * s.xy;
-
-    p.xy = p.x < p.y ? p.yx : p.xy;
-    p.yz = p.y < p.z ? p.zy : p.yz;
-    p.xz = p.x < p.z ? p.zx : p.xz;
-  }
-
-  return p;
-}
-
-float box( vec3 p, vec3 d ) {
-  vec3 absp = abs( p );
-  return max( ( absp.x - d.x ), max( ( absp.y - d.y ), ( absp.z - d.z ) ) );
-}
+#pragma glslify: distFunc = require( ./-distFunc );
 
 float distFunc( vec3 p ) {
-  // float phase = time + 0.1 * p.z;
-  // phase = floor( phase ) - exp( -7.0 * fract( phase ) );
-  // vec4 dice1 = texture2D( samplerRandomStatic, phase * vec2( 0.0001, 0.0004 ) );
-  // vec4 dice2 = texture2D( samplerRandomStatic, phase * vec2( 0.0003, 0.0002 ) );
-  // p.xy = rot2d( 0.2 * ( dice1.w - 0.5 ) * p.z ) * p.xy;
-  // p.z = mod( p.z - 5.0 * time, 5.0 ) - 2.5;
-  // p.x = mod( p.x, 12.0 ) - 6.0;
-  // p.x = abs( p.x );
-  // p.zx = rot2d( time ) * p.zx;
-  // p.y = mod( p.y, 3.0 ) - 1.5;
-  // p = ifs( p, dice1.xyz, 1.0 + 1.0 * dice2.xyz );
-  // return box( p, vec3( 0.05 + 0.15 * dice2.w ) );
-  return length( p ) - 0.5;
+  return distFunc( p, time, midiCC );
 }
 
 vec3 normalFunc( vec3 p, float dd ) {
@@ -90,8 +57,8 @@ void main() {
   vec3 rayPos = rayOri + rayDir * rayLen;
   float dist;
 
-  for ( int i = 0; i < 50; i ++ ) {
-    dist = distFunc( rayPos );
+  for ( int i = 0; i < MARCH_ITER; i ++ ) {
+    dist = distFunc( rayPos, time, midiCC );
     rayLen += 0.7 * dist;
     rayPos = rayOri + rayDir * rayLen;
 
@@ -103,7 +70,7 @@ void main() {
   }
 
   vec3 normal = normalFunc( rayPos, 1E-4 );
-  vec4 color = vec4( 0.5, 0.5, 0.5, 1.0 );
+  vec4 color = vec4( 0.1, 0.2, 0.4, 1.0 );
 
   vec4 projPos = projectionMatrix * viewMatrix * vec4( rayPos, 1.0 ); // terrible
   float depth = projPos.z / projPos.w;
@@ -113,5 +80,5 @@ void main() {
   gl_FragData[ 0 ] = vec4( rayPos, depth );
   gl_FragData[ 1 ] = vec4( normal, 1.0 );
   gl_FragData[ 2 ] = color;
-  gl_FragData[ 3 ] = vec4( vec3( 1.0, 0.9, 0.0 ), MTL_PBR );
+  gl_FragData[ 3 ] = vec4( vec3( 10.0, 0.6, 0.9 ), MTL_IRIDESCENT );
 }

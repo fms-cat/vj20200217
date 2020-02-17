@@ -2,6 +2,7 @@
 #define MTL_UNLIT 1
 #define MTL_PBR 2
 #define MTL_GRADIENT 3
+#define MTL_IRIDESCENT 4
 
 #define AO_ITER 8
 #define AO_BIAS 0.0
@@ -45,6 +46,14 @@ uniform sampler2D samplerRandom;
 // == commons ======================================================================================
 #pragma glslify: prng = require( ./-prng );
 
+vec3 catColor( float _p ) {
+  return 0.5 + 0.5 * vec3(
+    cos( _p ),
+    cos( _p + PI / 3.0 * 4.0 ),
+    cos( _p + PI / 3.0 * 2.0 )
+  );
+}
+
 vec3 randomSphere( inout vec4 seed ) {
   vec3 v;
   for ( int i = 0; i < 10; i ++ ) {
@@ -56,6 +65,27 @@ vec3 randomSphere( inout vec4 seed ) {
     if ( length( v ) < 1.0 ) { break; }
   }
   return v;
+}
+
+vec3 blurpleGradient( float t ) {
+  vec3 colorA = vec3( 0.01, 0.04, 0.2 );
+  vec3 colorB = vec3( 0.02, 0.3, 0.9 );
+  vec3 colorC = vec3( 0.9, 0.01, 0.6 );
+  vec3 colorD = vec3( 0.5, 0.02, 0.02 );
+
+  return mix(
+    colorA,
+    mix(
+      colorB,
+      mix(
+        colorC,
+        colorD,
+        linearstep( 0.67, 1.0, t )
+      ),
+      linearstep( 0.33, 0.67, t )
+    ),
+    linearstep( 0.0, 0.33, t )
+  );
 }
 
 // == structs ======================================================================================
@@ -125,14 +155,12 @@ float calcDepth( vec3 pos ) {
 }
 
 // == shading functions ============================================================================
-vec3 shadePBR( Isect isect ) {
+vec3 shadePBR( Isect isect, AngularInfo aI ) {
   // ref: https://github.com/KhronosGroup/glTF-Sample-Viewer/blob/master/src/shaders/metallic-roughness.frag
 
   float roughness = isect.materialParams.x;
   float metallic = isect.materialParams.y;
   float emissive = isect.materialParams.z;
-
-  AngularInfo aI = genAngularInfo( isect );
 
   float shadow = castShadow( isect, aI );
   shadow = mix( 1.0, shadow, 0.8 );
@@ -182,24 +210,7 @@ vec3 shadePBR( Isect isect ) {
 vec3 shadeGradient( Isect isect ) {
 #ifdef IS_FIRST_LIGHT
   float shade = isect.normal.y;
-
-  vec3 colorA = vec3( 0.01, 0.04, 0.2 );
-  vec3 colorB = vec3( 0.02, 0.2, 0.9 );
-  vec3 colorC = vec3( 0.9, 0.01, 0.6 );
-  vec3 colorD = vec3( 0.9, 0.8, 0.8 );
-  return mix(
-    colorA,
-    mix(
-      colorB,
-      mix(
-        colorC,
-        colorD,
-        linearstep( 0.5, 1.0, shade )
-      ),
-      linearstep( -0.3, 0.5, shade )
-    ),
-    linearstep( -1.0, -0.3, shade )
-  );
+  return blurpleGradient( 0.5 + 0.5 * shade );
 #else // IS_FIRST_LIGHT
   return vec3( 0.0 );
 #endif // IS_FIRST_LIGHT
@@ -233,21 +244,35 @@ void main() {
 #endif
 
   } else if ( isect.materialId == MTL_PBR ) {
-    color = shadePBR( isect );
+    AngularInfo aI = genAngularInfo( isect );
+    color = shadePBR( isect, aI );
 
   } else if ( isect.materialId == MTL_GRADIENT ) {
     color = shadeGradient( isect );
+
+  } else if ( isect.materialId == MTL_IRIDESCENT ) {
+    AngularInfo aI = genAngularInfo( isect );
+    isect.albedo *= mix(
+      vec3( 1.0 ),
+      catColor( isect.materialParams.x * aI.dotNV ),
+      isect.materialParams.y
+    );
+    isect.materialParams = vec3( 0.1, isect.materialParams.z, 0.0 );
+    color = shadePBR( isect, aI );
 
   }
 
   vec3 xfdA = color;
   vec3 xfdB = vec3( 0.0 );
 
+  xfdA = color;
+
 #ifdef IS_FIRST_LIGHT
-  xfdB = 0.5 + 0.5 * isect.normal;
+  // xfdB = 0.5 + 0.5 * isect.normal;
   xfdB = vec3( calcDepth( tex0.xyz ) );
+  // xfdB = vec3( 0.4 ) * ( 1.0 - texture2D( samplerAo, isect.screenUv ).xyz );
 #endif
-  xfdB = shadeGradient( isect );
+  // xfdA = shadeGradient( isect );
 
   gl_FragColor.xyz = mix( xfdA, xfdB, midiCC[ 77 ] );
   gl_FragColor.w = 1.0;

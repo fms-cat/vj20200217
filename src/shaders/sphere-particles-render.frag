@@ -5,6 +5,7 @@
 
 #define MTL_UNLIT 1
 #define MTL_PBR 2
+#define MTL_IRIDESCENT 4
 
 #extension GL_EXT_draw_buffers : enable
 
@@ -30,6 +31,6 @@ void main() {
 
   gl_FragData[ 0 ] = vPosition;
   gl_FragData[ 1 ] = vec4( vNormal, 1.0 );
-  gl_FragData[ 2 ] = vec4( 0.04 * vColor.xyz, 1.0 );
-  gl_FragData[ 3 ] = vec4( vec3( 0.2, 0.9, 0.0 ), MTL_PBR );
+  gl_FragData[ 2 ] = vec4( vColor.xyz, 1.0 );
+  gl_FragData[ 3 ] = vec4( vec3( 0.2, 0.5, 0.0 ), MTL_PBR );
 }

@@ -1,9 +1,9 @@
+import { GL, GLCatTexture } from '@fms-cat/glcat-ts';
 import { Mesh, MeshCull } from '../heck/components/Mesh';
 import { TRIANGLE_STRIP_QUAD, Vector3 } from '@fms-cat/experimental';
 import { DISPLAY } from '../heck/DISPLAY';
 import { DrawLambda } from '../heck/components/DrawLambda';
 import { Entity } from '../heck/Entity';
-import { GL } from '@fms-cat/glcat-ts';
 import { Geometry } from '../heck/Geometry';
 import { Material } from '../heck/Material';
 import { Shaders } from '../shaders';
@@ -24,7 +24,10 @@ export class Raymarcher {
     return this.__entity;
   }
 
-  public constructor() {
+  public constructor( options: {
+    textureRandom: GLCatTexture;
+    textureRandomStatic: GLCatTexture;
+  } ) {
     this.__entity = new Entity();
     this.__entity.transform.position = new Vector3( [ 0.0, 0.0, 0.3 ] );
     this.__entity.transform.scale = new Vector3( [ 16.0, 9.0, 1.0 ] ).scale( 0.15 );
@@ -33,6 +36,9 @@ export class Raymarcher {
     this.__material = this.__createMaterial();
 
     this.__material.addUniform( 'range', '4f', -1.0, -1.0, 1.0, 1.0 );
+
+    this.__material.addUniformTexture( 'samplerRandom', options.textureRandom );
+    this.__material.addUniformTexture( 'samplerRandomStatic', options.textureRandomStatic );
 
     this.__entity.components.push( new DrawLambda( ( event ) => {
       this.__material.addUniform(

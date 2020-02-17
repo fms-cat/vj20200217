@@ -6,6 +6,7 @@
 #define PI 3.14159265
 #define V vec3(0.,1.,-1.)
 #define saturate(i) clamp(i,0.,1.)
+#define linearstep(a,b,x) saturate(((x)-(a))/((b)-(a)))
 #define lofi(i,m) (floor((i)/(m))*(m))
 
 // ------
@@ -19,10 +20,42 @@ uniform float errorTime;
 uniform vec2 resolution;
 
 uniform sampler2D sampler0;
+uniform sampler2D samplerLut;
 
 uniform float midiCC[ 128 ];
 
 // ------
+
+vec3 lut( vec3 i ) {
+  vec2 uv = saturate( mix(
+    vec2( 0.5 / 1024.0, 0.5 / 32.0 ),
+    vec2( 31.5 / 1024.0, 31.5 / 32.0 ),
+    i.rg
+  ) );
+  uv.y = 1.0 - uv.y;
+
+  vec2 uvA = uv;
+  float lofiB = lofi( clamp( i.b, 0.0, 0.999 ), 1.0 / 32.0 );
+  uvA.x += lofiB;
+  vec3 texA = texture2D( samplerLut, uvA ).xyz;
+
+  vec2 uvB = uvA + 1.0 / vec2( 1.0, 32.0 );
+  vec3 texB = texture2D( samplerLut, uvB ).xyz;
+
+  return mix(
+    texA,
+    texB,
+    i.b - lofiB
+  );
+}
+
+vec3 colorMap( vec3 i ) {
+  return vec3(
+    smoothstep( 0.0, 1.0, i.r ),
+    i.g,
+    0.1 + 0.8 * i.b
+  );
+}
 
 vec3 barrel( float amp, vec2 uv ) {
   float corn = length( vec2( 0.5 ) );
@@ -57,11 +90,9 @@ void main() {
   tex = mix( vec3( 0.0 ), tex, vig );
 
   vec3 col = pow( saturate( tex.xyz ), vec3( 0.4545 ) );
-  col = vec3(
-    smoothstep( 0.00, 1.30, col.x + 0.15 * uv.y ),
-    col.y,
-    0.1 + 0.8 * col.z
-  );
+  col.x = linearstep( 0.0, 1.2, col.x + 0.2 * uv.y );
+  col = colorMap( col );
+  col.xyz *= midiCC[ 83 ];
 
   gl_FragColor = vec4( col, 1.0 );
   gl_FragColor.yz *= 0.6 + 0.4 * cos( 5.0 * errorTime );

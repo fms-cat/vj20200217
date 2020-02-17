@@ -1,6 +1,4 @@
 #define PARTICLE_LIFE_LENGTH 5.0
-#define SPHERE_RADIUS 1.0
-#define SPHERE_CENTER vec3( 0.0, 0.0, 0.0 )
 
 #define HUGE 9E16
 #define PI 3.14159265
@@ -37,6 +35,21 @@ uniform float noisePhase;
 uniform float midiCC[ 128 ];
 
 // ------
+
+#pragma glslify: distFunc = require( ./-distFunc );
+
+float distFunc( vec3 p ) {
+  return distFunc( p, time, midiCC );
+}
+
+vec3 normalFunc( vec3 p, float dd ) {
+  vec2 d = vec2( 0.0, dd );
+  return normalize( vec3(
+    distFunc( p + d.yxx ) - distFunc( p - d.yxx ),
+    distFunc( p + d.xyx ) - distFunc( p - d.xyx ),
+    distFunc( p + d.xxy ) - distFunc( p - d.xxy )
+  ) );
+}
 
 vec2 uvInvT( vec2 _uv ) {
   return vec2( 0.0, 1.0 ) + vec2( 1.0, -1.0 ) * _uv;
@@ -155,7 +168,7 @@ void main() {
   ) {
     dt = time - timing;
 
-    pos = SPHERE_RADIUS * randomSphere( seed ) + SPHERE_CENTER;
+    pos = 1.0 * randomSphere( seed );
 
     vel = 1.0 * randomSphere( seed );
 
@@ -167,13 +180,13 @@ void main() {
   }
 
   // == update particles ===========================================================================
-  vec3 posFromSphereCenter = pos.xyz - SPHERE_CENTER;
+  // distFunc
+  float dist = distFunc( pos.xyz ) - 0.2;
+  vec3 nor = normalFunc( pos.xyz, 1E-4 );
+  vel -= dt * 100.0 * dist * nor;
 
   // spin around center
-  vel.zx += dt * 20.0 * vec2( -1.0, 1.0 ) * normalize( posFromSphereCenter.xz );
-
-  // sphere
-  vel += dt * 20.0 * ( SPHERE_RADIUS - length( posFromSphereCenter ) ) * normalize( posFromSphereCenter );
+  vel.zx += dt * 20.0 * vec2( -1.0, 1.0 ) * normalize( nor.xz );
 
   // noise field
   vel += midiCC[ 13 ] * 100.0 * vec3(
@@ -184,9 +197,10 @@ void main() {
 
   // resistance
   vel *= exp( -10.0 * dt );
+  // vel.z += 10.0 * dt;
 
   vec3 v = vel;
-  float vmax = max( abs( v.x ), max( abs( v.y ), abs( v.z ) ) );
+  // float vmax = max( abs( v.x ), max( abs( v.y ), abs( v.z ) ) );
   // v *= (
   //   abs( v.x ) == vmax ? vec3( 1.0, 0.0, 0.0 ) :
   //   abs( v.y ) == vmax ? vec3( 0.0, 1.0, 0.0 ) :

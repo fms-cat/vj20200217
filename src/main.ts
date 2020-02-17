@@ -136,7 +136,10 @@ dog.root.children.push( hotPlane.entity );
 const background = new Background();
 dog.root.children.push( background.entity );
 
-const raymarcher = new Raymarcher();
+const raymarcher = new Raymarcher( {
+  textureRandom: randomTexture.texture,
+  textureRandomStatic: randomTextureStatic.texture
+} );
 dog.root.children.push( raymarcher.entity );
 
 // -- things that is not an "object" ---------------------------------------------------------------
@@ -156,8 +159,8 @@ const light = new LightEntity( {
   shadowMapNear: 1.0,
   shadowMapFar: 20.0
 } );
-light.color = [ 50.0, 50.0, 50.0 ];
-light.entity.transform.lookAt( new Vector3( [ -1.0, 2.0, 6.0 ] ) );
+light.color = [ 60.0, 60.0, 60.0 ];
+light.entity.transform.lookAt( new Vector3( [ -1.0, 2.0, 8.0 ] ) );
 dog.root.children.push( light.entity );
 
 // const light2 = new LightEntity( {

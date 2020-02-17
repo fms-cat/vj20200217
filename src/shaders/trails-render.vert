@@ -2,7 +2,8 @@
 #define PI 3.141592654
 #define TAU 6.283185307
 #define V vec3(0.,1.,-1.)
-#define saturate(i) clamp(i,0.,1.)
+#define saturate(x) clamp(x,0.,1.)
+#define linearstep(a,b,x) saturate(((x)-(a))/((b)-(a)))
 #define lofi(i,m) (floor((i)/(m))*(m))
 #define lofir(i,m) (floor((i+0.5)/(m))*(m))
 
@@ -37,6 +38,26 @@ uniform sampler2D samplerCompute;
 uniform sampler2D samplerRandomStatic;
 
 // -------------------------------------------------------------------------------------------------
+vec3 blurpleGradient( float t ) {
+  vec3 colorA = vec3( 0.01, 0.04, 0.2 );
+  vec3 colorB = vec3( 0.02, 0.3, 0.9 );
+  vec3 colorC = vec3( 0.9, 0.01, 0.6 );
+  vec3 colorD = vec3( 0.5, 0.02, 0.02 );
+
+  return mix(
+    colorA,
+    mix(
+      colorB,
+      mix(
+        colorC,
+        colorD,
+        linearstep( 0.67, 1.0, t )
+      ),
+      linearstep( 0.33, 0.67, t )
+    ),
+    linearstep( 0.0, 0.33, t )
+  );
+}
 
 vec3 catColor( float _p ) {
   return 0.5 + 0.5 * vec3(
@@ -72,9 +93,11 @@ void main() {
 
   vColor.xyz = (
     vRandom.y < 0.8
-    ? pow( catColor( TAU * ( ( vRandom.x * 2.0 - 1.0 ) * colorVar + colorOffset ) ), vec3( 2.0 ) )
+    ? pow( catColor( TAU * ( ( vRandom.x * 2.0 - 1.0 ) * colorVar + 0.6 + colorOffset ) ), vec3( 2.0 ) )
     : vec3( 0.4 )
   );
+  // vColor.xyz = blurpleGradient( vLife );
+  vColor.xyz = catColor( 3.0 + 4.0 * vLife );
 
   vColor.w = ( velp.w < 0.5 && vel.w < 0.5 && 0.0 < vLife ) ? 1.0 : -1.0;
 

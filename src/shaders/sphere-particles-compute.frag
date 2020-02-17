@@ -1,6 +1,4 @@
 #define PARTICLE_LIFE_LENGTH 1.0
-#define SPHERE_RADIUS 1.0
-#define SPHERE_CENTER vec3( 0.0, 0.0, 0.0 )
 
 #define HUGE 9E16
 #define PI 3.14159265
@@ -42,6 +40,21 @@ vec2 uvInvT( vec2 _uv ) {
 }
 
 // ------
+
+#pragma glslify: distFunc = require( ./-distFunc );
+
+float distFunc( vec3 p ) {
+  return distFunc( p, time, midiCC );
+}
+
+vec3 normalFunc( vec3 p, float dd ) {
+  vec2 d = vec2( 0.0, dd );
+  return normalize( vec3(
+    distFunc( p + d.yxx ) - distFunc( p - d.yxx ),
+    distFunc( p + d.xyx ) - distFunc( p - d.xyx ),
+    distFunc( p + d.xxy ) - distFunc( p - d.xxy )
+  ) );
+}
 
 mat2 rotate2D( float _t ) {
   return mat2( cos( _t ), sin( _t ), -sin( _t ), cos( _t ) );
@@ -132,7 +145,7 @@ void main() {
   ) {
     dt = time - timing;
 
-    pos = SPHERE_RADIUS * randomSphere( seed ) + SPHERE_CENTER;
+    pos = 0.5 * randomSphere( seed );
 
     vel = 1.0 * randomSphere( seed );
 
@@ -143,13 +156,13 @@ void main() {
   }
 
   // == update particles ===========================================================================
-  vec3 posFromSphereCenter = pos.xyz - SPHERE_CENTER;
+  // distFunc
+  float dist = distFunc( pos.xyz ) - 0.2;
+  vec3 nor = normalFunc( pos.xyz, 1E-4 );
+  vel -= dt * 100.0 * dist * nor;
 
   // spin around center
-  vel.zx += dt * 20.0 * vec2( -1.0, 1.0 ) * normalize( posFromSphereCenter.xz );
-
-  // sphere
-  vel += dt * 20.0 * ( SPHERE_RADIUS - length( posFromSphereCenter ) ) * normalize( posFromSphereCenter );
+  vel.zx += dt * 20.0 * vec2( -1.0, 1.0 ) * normalize( nor.xz );
 
   // noise field
   vel += midiCC[ 13 ] * 100.0 * vec3(

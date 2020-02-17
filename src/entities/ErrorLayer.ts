@@ -31,7 +31,7 @@ export class ErrorLayer {
 
   public constructor() {
     this.__entity = new Entity();
-    this.__entity.transform.position = new Vector3( [ 0.0, 0.0, 1.0 ] );
+    this.__entity.transform.position = new Vector3( [ 0.0, 0.0, 1.4 ] );
     this.__entity.transform.scale = new Vector3( [ 2.0, 1.0, 1.0 ] );
 
     this.__canvas = document.createElement( 'canvas' );

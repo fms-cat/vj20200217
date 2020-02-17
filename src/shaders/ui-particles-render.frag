@@ -16,9 +16,7 @@
 #define MODE_GRID 1
 #define MODE_CIRCLE 2
 #define MODE_CHAR 3
-#define MODE_ICON 4
-#define MODE_BUTTON 5
-#define MODES 6
+#define MODES 4
 
 #extension GL_EXT_draw_buffers : enable
 #extension GL_OES_standard_derivatives : enable
@@ -135,62 +133,6 @@ void main() {
     shape = xor( step( uv.y + 0.01, anim ), shape );
 
     shape *= step( abs( uv.x - 0.5 ), 0.4 );
-
-    if ( shape < 0.5 ) { discard; }
-
-    color = vec3( 1.0 );
-
-  } else if ( mode == MODE_BUTTON ) {
-    float size = 1.0 - exp( -10.0 * ( 1.0 - vLife ) );
-
-    color = PIXIV_BLUE;
-
-    vec2 uv = vUv;
-
-    vec2 folded = uv;
-    folded = 0.5 - abs( folded - 0.5 );
-    folded.x /= 0.4;
-    folded = 0.5 - folded;
-    folded.x = max( folded.x, 0.0 );
-
-    float shape = step( length( folded ), 0.5 * size );
-
-    if ( shape < 0.5 ) { discard; }
-
-    vec2 wordUv = uvInvT( vUv );
-    wordUv = clamp( ( wordUv - 0.5 ) / size / vec2( 0.9, 0.59 ) + 0.5, 0.01, 0.99 ); // I'm dumb
-    wordUv *= vec2( 0.5, 0.125 );
-    wordUv.xy += lofi(
-      fract( 777.77 * vDice.xy ),
-      vec2( 0.5, 0.125 )
-    );
-
-    float tex = texture2D( samplerWord, wordUv ).x;
-
-    color = mix(
-      mix( vec3( 1.0 ), PIXIV_BLUE, linearstep( -0.5, 0.5, tex ) ),
-      mix( FADE_60, FADE_10, linearstep( -0.5, 0.5, tex ) ),
-      step( 0.5, wordUv.x )
-    );
-
-  } else if ( mode == MODE_ICON ) {
-    float size = 1.0 - exp( -10.0 * ( 1.0 - vLife ) );
-
-    vec2 uv = vUv;
-    uv -= 0.5;
-    uv = rotate2D( 3.0 * exp( -10.0 * ( 1.0 - vLife ) ) ) * uv;
-    uv = clamp( uv / size, -0.5, 0.5 );
-    uv += 0.5;
-
-    vec2 iconUv = uvInvT( uv );
-    iconUv *= vec2( 0.125, 0.25 );
-    iconUv.xy += lofi(
-      fract( 777.77 * vDice.xy ),
-      vec2( 0.125, 0.25 )
-    );
-
-    float tex = texture2D( samplerIcon, iconUv ).x;
-    float shape = step( tex, 0.0 );
 
     if ( shape < 0.5 ) { discard; }
 

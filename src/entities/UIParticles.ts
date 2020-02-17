@@ -10,20 +10,13 @@ import { MeshCull } from '../heck/components/Mesh';
 import { Shaders } from '../shaders';
 import { TRIANGLE_STRIP_QUAD } from '@fms-cat/experimental';
 import { createFontSpritesheetSDF } from '../utils/createFontSpritesheetSDF';
-import { createImageSDF } from '../utils/createImageSDF';
 import { loadImageTexture } from '../utils/loadImageTexture';
 
 const textureMissing = DISPLAY.glCat.createTexture();
 textureMissing.setZeroTexture();
 
-const textureWord = DISPLAY.glCat.createTexture();
-textureWord.setZeroTexture();
-
 const textureChar = DISPLAY.glCat.createTexture();
 textureChar.setZeroTexture();
-
-const textureIcon = DISPLAY.glCat.createTexture();
-textureIcon.setZeroTexture();
 
 async function prepareTextures(): Promise<void> {
   await loadImageTexture( {
@@ -32,32 +25,9 @@ async function prepareTextures(): Promise<void> {
   } );
 
   await createFontSpritesheetSDF( {
-    texture: textureWord,
-    charSize: [ 256, 64 ],
-    matrix: [ 2, 8 ],
-    baseline: 0.75,
-    font: '40px "Roboto"',
-    chars: [
-      'Button', 'Button',
-      'Confirm', 'Cancel',
-      'Upload', 'Submit',
-      'OK', 'Login',
-      'Create', 'Details',
-      'Post', 'Copy',
-      'Next', 'More',
-      'Share', 'Edit'
-    ]
-  } );
-
-  await createFontSpritesheetSDF( {
     texture: textureChar,
     charSize: [ 64, 64 ],
     font: '700 48px "Exo"',
-  } );
-
-  await createImageSDF( {
-    texture: textureIcon,
-    url: require( '../images/pdg-icons.png' ).default
   } );
 }
 prepareTextures();
@@ -175,8 +145,6 @@ export class UIParticles {
     material.addUniform( 'ppp', '1f', UIParticles.__ppp );
     material.addUniformTexture( 'samplerRandomStatic', options.textureRandomStatic );
     material.addUniformTexture( 'samplerChar', textureChar );
-    material.addUniformTexture( 'samplerWord', textureWord );
-    material.addUniformTexture( 'samplerIcon', textureIcon );
     material.addUniformTexture( 'samplerDoublequoteRandom', textureMissing );
 
     if ( module.hot ) {

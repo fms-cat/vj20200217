@@ -10,9 +10,7 @@
 #define MODE_GRID 1
 #define MODE_CIRCLE 2
 #define MODE_CHAR 3
-#define MODE_ICON 4
-#define MODE_BUTTON 5
-#define MODES 6
+#define MODES 4
 
 // -------------------------------------------------------------------------------------------------
 
@@ -99,12 +97,6 @@ void main() {
     size = vec2( 1.0 * vDice.x );
 
   } else if ( mode == MODE_CHAR ) {
-    size = vec2( 0.2 + 0.2 * vDice.x );
-
-  } else if ( mode == MODE_BUTTON ) {
-    size = vec2( 1.0, 0.4 ) * ( 0.2 + 0.2 * vDice.x );
-
-  } else if ( mode == MODE_ICON ) {
     size = vec2( 0.2 + 0.2 * vDice.x );
 
   }

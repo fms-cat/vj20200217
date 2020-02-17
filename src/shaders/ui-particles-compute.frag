@@ -12,9 +12,7 @@
 #define MODE_GRID 1
 #define MODE_CIRCLE 2
 #define MODE_CHAR 3
-#define MODE_ICON 4
-#define MODE_BUTTON 5
-#define MODES 6
+#define MODES 4
 
 // ------
 
